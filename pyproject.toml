@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shortcutcleaner"
+version = "0.0.1"
+authors = [
+  { name="Benjamin Couey", email="benjamincouey36@gmail.com" },
+]
+description = "A package for cleaning broken shortcuts"
+requires-python = ">=3.8"
