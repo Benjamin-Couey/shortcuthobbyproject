@@ -1,6 +1,8 @@
 import os
 from pywintypes import com_error
 import time
+import tkinter as tk
+from tkinter import filedialog
 from win32com import client
 from urllib.parse import urlparse
 
@@ -98,12 +100,14 @@ def search_dir( dir ):
 
     return sub_dirs
 
+root = tk.Tk()
+# Hide the Tkinter root so we only get the file dialog.
+root.withdraw()
+
+start_dir = filedialog.askdirectory()
+print( "Starting search at: " + start_dir )
 
 start_time = time.time()
-
-# TODO: Make start configurable
-start_dir = os.path.join( os.getcwd() )
-print( "Starting search at: " + start_dir )
 
 dirs_to_search = [ start_dir ]
 while len( dirs_to_search ) > 0:
