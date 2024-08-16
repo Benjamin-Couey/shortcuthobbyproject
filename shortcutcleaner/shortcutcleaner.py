@@ -116,7 +116,10 @@ while len( dirs_to_search ) > 0:
     for filename in os.listdir( dir_to_search ):
         path = os.path.join( dir_to_search, filename )
         if os.path.isfile( path ) and is_broken_shortcut( path ):
-            print("Found broken shortcut at: " + path)
+            if args.clean:
+                os.remove( path )
+            else:
+                print("Found broken shortcut at: " + path)
         elif os.path.isdir( path ):
             dirs_to_search.append( path )
 
