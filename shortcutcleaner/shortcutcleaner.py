@@ -1,3 +1,4 @@
+import argparse
 import os
 from pywintypes import com_error
 import time
@@ -99,6 +100,18 @@ def search_dir( dir ):
             sub_dirs.append( path )
 
     return sub_dirs
+
+parser = argparse.ArgumentParser(
+    prog="shortcutcleaner",
+    description="Search for and clean broken shortcuts."
+)
+parser.add_argument(
+    '--clean',
+    help='Delete broken shortcuts that are found (default: report broken shortcuts).',
+    action='store',
+    default=False
+)
+args = parser.parse_args()
 
 root = tk.Tk()
 # Hide the Tkinter root so we only get the file dialog.
