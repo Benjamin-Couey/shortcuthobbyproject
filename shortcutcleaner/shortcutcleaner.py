@@ -88,19 +88,6 @@ def is_broken_shortcut( filepath ):
         # print( e )
         return False
 
-def search_dir( dir ):
-
-    sub_dirs = []
-
-    for filename in os.listdir( dir ):
-        path = os.path.join( dir, filename )
-        if os.path.isfile( path ) and is_broken_shortcut( path ):
-            print("Found broken shortcut at: " + path)
-        elif os.path.isdir( path ):
-            sub_dirs.append( path )
-
-    return sub_dirs
-
 parser = argparse.ArgumentParser(
     prog="shortcutcleaner",
     description="Search for and clean broken shortcuts."
@@ -125,6 +112,12 @@ start_time = time.time()
 dirs_to_search = [ start_dir ]
 while len( dirs_to_search ) > 0:
     dir_to_search = dirs_to_search.pop(0)
-    dirs_to_search += search_dir( dir_to_search )
+
+    for filename in os.listdir( dir_to_search ):
+        path = os.path.join( dir_to_search, filename )
+        if os.path.isfile( path ) and is_broken_shortcut( path ):
+            print("Found broken shortcut at: " + path)
+        elif os.path.isdir( path ):
+            dirs_to_search.append( path )
 
 print("Took %s seconds to run." % (time.time() - start_time))
