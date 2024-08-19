@@ -76,7 +76,7 @@ def is_broken_shortcut( filepath ):
         shell = client.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut( filepath )
         if is_file_shortcut( filepath ):
-            return not os.path.isfile( shortcut.Targetpath )
+            return not ( os.path.isfile( shortcut.Targetpath ) or os.path.isdir( shortcut.Targetpath ) )
         elif is_net_shortcut( filepath ):
             return not is_valid_url( shortcut.Targetpath )
         else:

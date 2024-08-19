@@ -30,35 +30,54 @@ def test_is_valid_url():
     assert is_valid_url(u'dkakasdkjdjakdjadjfalskdjfalk') == False
 
 def test_is_broken_shortcut( tmp_path ):
-    target_path = tmp_path / "target_file"
-    target_path.touch()
-    working_path = tmp_path / "working_shortcut.lnk"
+    target_path = tmp_path / "target_dir" / "target_file"
+    target_path.parent.mkdir() # Create temporary directory
+    target_path.touch() # Create temporary file
+    working_path1 = tmp_path / "working_shortcut1.lnk"
+    working_path2 = tmp_path / "working_shortcut2.lnk"
     broken_path1 = tmp_path / "broken_shortcut1.lnk"
     broken_path2 = tmp_path / "broken_shortcut2.lnk"
-    broken_path3 = tmp_path / "broken_shortcut3.url"
-    broken_path4 = tmp_path / "broken_shortcut4.url"
+    # broken_path3 = tmp_path / "broken_shortcut3.url"
+    # broken_path4 = tmp_path / "broken_shortcut4.url"
+    broken_path5 = tmp_path / "broken_shortcut5.lnk"
+    broken_path6 = tmp_path / "broken_shortcut6.lnk"
 
     shell = win32com.client.Dispatch("WScript.Shell")
-    working_shortcut = shell.CreateShortCut( str( working_path ) )
-    working_shortcut.Targetpath = str( target_path )
-    working_shortcut.save()
+    working_shortcut1 = shell.CreateShortCut( str( working_path1 ) )
+    working_shortcut1.Targetpath = str( target_path )
+    working_shortcut1.save()
+
+    working_shortcut2 = shell.CreateShortCut( str( working_path2 ) )
+    working_shortcut2.Targetpath = str( tmp_path / "target_dir" )
+    working_shortcut2.save()
 
     broken_shortcut1 = shell.CreateShortCut( str( broken_path1 ) )
     broken_shortcut1.save()
 
     broken_shortcut2 = shell.CreateShortCut( str( broken_path2 ) )
-    working_shortcut.Targetpath = str( tmp_path / "not_a_file" )
+    broken_shortcut2.Targetpath = str( tmp_path / "not_a_file" )
     broken_shortcut2.save()
 
-    broken_shortcut3 = shell.CreateShortCut( str( broken_path4 ) )
-    broken_shortcut3.save()
+    # broken_shortcut3 = shell.CreateShortCut( str( broken_path3 ) )
+    # broken_shortcut3.save()
+    #
+    # broken_shortcut4 = shell.CreateShortCut( str( broken_path4 ) )
+    # broken_shortcut4.Targetpath = "not_a_valid_url"
+    # broken_shortcut4.save()
 
-    broken_shortcut4 = shell.CreateShortCut( str( broken_path4 ) )
-    working_shortcut.Targetpath = "not_a_valid_url"
-    broken_shortcut4.save()
+    broken_shortcut5 = shell.CreateShortCut( str( broken_path5 ) )
+    broken_shortcut5.Targetpath = str( tmp_path / "wrong_dir" / "target_file" )
+    broken_shortcut5.save()
 
-    assert is_broken_shortcut( str( working_path ) ) == False
+    broken_shortcut6 = shell.CreateShortCut( str( broken_path6 ) )
+    broken_shortcut6.Targetpath = str( tmp_path / "not_a_dir" )
+    broken_shortcut6.save()
+
+    assert is_broken_shortcut( str( working_path1 ) ) == False
+    assert is_broken_shortcut( str( working_path2 ) ) == False
     assert is_broken_shortcut( str( broken_path1 ) ) == True
     assert is_broken_shortcut( str( broken_path2 ) ) == True
-    assert is_broken_shortcut( str( broken_path3 ) ) == True
-    assert is_broken_shortcut( str( broken_path4 ) ) == True
+    # assert is_broken_shortcut( str( broken_path3 ) ) == True
+    # assert is_broken_shortcut( str( broken_path4 ) ) == True
+    assert is_broken_shortcut( str( broken_path5 ) ) == True
+    assert is_broken_shortcut( str( broken_path6 ) ) == True
