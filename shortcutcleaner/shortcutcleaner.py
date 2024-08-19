@@ -113,14 +113,17 @@ dirs_to_search = [ start_dir ]
 while len( dirs_to_search ) > 0:
     dir_to_search = dirs_to_search.pop(0)
 
-    for filename in os.listdir( dir_to_search ):
-        path = os.path.join( dir_to_search, filename )
-        if os.path.isfile( path ) and is_broken_shortcut( path ):
-            if args.clean:
-                os.remove( path )
-            else:
-                print("Found broken shortcut at: " + path)
-        elif os.path.isdir( path ):
-            dirs_to_search.append( path )
+    try:
+        for filename in os.listdir( dir_to_search ):
+            path = os.path.join( dir_to_search, filename )
+            if os.path.isfile( path ) and is_broken_shortcut( path ):
+                if args.clean:
+                    os.remove( path )
+                else:
+                    print("Found broken shortcut at: " + path)
+            elif os.path.isdir( path ):
+                dirs_to_search.append( path )
+    except PermissionError as e:
+        print(e)
 
 print("Took %s seconds to run." % (time.time() - start_time))
