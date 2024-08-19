@@ -35,9 +35,10 @@ def test_is_broken_shortcut( tmp_path ):
     target_path.touch() # Create temporary file
     working_path1 = tmp_path / "working_shortcut1.lnk"
     working_path2 = tmp_path / "working_shortcut2.lnk"
+    working_path3 = tmp_path / "working_shortcut3.url"
     broken_path1 = tmp_path / "broken_shortcut1.lnk"
     broken_path2 = tmp_path / "broken_shortcut2.lnk"
-    # broken_path3 = tmp_path / "broken_shortcut3.url"
+    broken_path3 = tmp_path / "broken_shortcut3.url"
     # broken_path4 = tmp_path / "broken_shortcut4.url"
     broken_path5 = tmp_path / "broken_shortcut5.lnk"
     broken_path6 = tmp_path / "broken_shortcut6.lnk"
@@ -51,6 +52,10 @@ def test_is_broken_shortcut( tmp_path ):
     working_shortcut2.TargetPath = str( tmp_path / "target_dir" )
     working_shortcut2.save()
 
+    working_shortcut3 = shell.CreateShortCut( str( working_path3 ) )
+    working_shortcut3.TargetPath = "https://a_valid_url"
+    working_shortcut3.save()
+
     broken_shortcut1 = shell.CreateShortCut( str( broken_path1 ) )
     broken_shortcut1.save()
 
@@ -58,9 +63,12 @@ def test_is_broken_shortcut( tmp_path ):
     broken_shortcut2.TargetPath = str( tmp_path / "not_a_file" )
     broken_shortcut2.save()
 
-    # broken_shortcut3 = shell.CreateShortCut( str( broken_path3 ) )
-    # broken_shortcut3.save()
-    #
+    broken_shortcut3 = shell.CreateShortCut( str( broken_path3 ) )
+    broken_shortcut3.save()
+
+    # TODO: Find an appropriate way to test with a broken URL shortcut.
+    # An error will be raised if you try to assign an invalid URL to a URL
+    # shortcut.
     # broken_shortcut4 = shell.CreateShortCut( str( broken_path4 ) )
     # broken_shortcut4.TargetPath = "not_a_valid_url"
     # broken_shortcut4.save()
@@ -75,9 +83,10 @@ def test_is_broken_shortcut( tmp_path ):
 
     assert is_broken_shortcut( str( working_path1 ) ) == False
     assert is_broken_shortcut( str( working_path2 ) ) == False
+    assert is_broken_shortcut( str( working_path3 ) ) == False
     assert is_broken_shortcut( str( broken_path1 ) ) == True
     assert is_broken_shortcut( str( broken_path2 ) ) == True
-    # assert is_broken_shortcut( str( broken_path3 ) ) == True
+    assert is_broken_shortcut( str( broken_path3 ) ) == True
     # assert is_broken_shortcut( str( broken_path4 ) ) == True
     assert is_broken_shortcut( str( broken_path5 ) ) == True
     assert is_broken_shortcut( str( broken_path6 ) ) == True
