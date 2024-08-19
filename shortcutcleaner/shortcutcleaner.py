@@ -88,42 +88,46 @@ def is_broken_shortcut( filepath ):
         # print( e )
         return False
 
-parser = argparse.ArgumentParser(
-    prog="shortcutcleaner",
-    description="Search for and clean broken shortcuts."
-)
-parser.add_argument(
-    '--clean',
-    help='Delete broken shortcuts that are found (default: report broken shortcuts).',
-    action='store',
-    default=False
-)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(
+        prog="shortcutcleaner",
+        description="Search for and clean broken shortcuts."
+    )
+    parser.add_argument(
+        '--clean',
+        help='Delete broken shortcuts that are found (default: report broken shortcuts).',
+        action='store',
+        default=False
+    )
+    args = parser.parse_args()
 
-root = tk.Tk()
-# Hide the Tkinter root so we only get the file dialog.
-root.withdraw()
+    root = tk.Tk()
+    # Hide the Tkinter root so we only get the file dialog.
+    root.withdraw()
 
-start_dir = filedialog.askdirectory()
-print( "Starting search at: " + start_dir )
+    start_dir = filedialog.askdirectory()
+    print( "Starting search at: " + start_dir )
 
-start_time = time.time()
+    start_time = time.time()
 
-dirs_to_search = [ start_dir ]
-while len( dirs_to_search ) > 0:
-    dir_to_search = dirs_to_search.pop(0)
+    dirs_to_search = [ start_dir ]
+    while len( dirs_to_search ) > 0:
+        dir_to_search = dirs_to_search.pop(0)
 
-    try:
-        for filename in os.listdir( dir_to_search ):
-            path = os.path.join( dir_to_search, filename )
-            if os.path.isfile( path ) and is_broken_shortcut( path ):
-                if args.clean:
-                    os.remove( path )
-                else:
-                    print("Found broken shortcut at: " + path)
-            elif os.path.isdir( path ):
-                dirs_to_search.append( path )
-    except PermissionError as e:
-        print(e)
+        try:
+            for filename in os.listdir( dir_to_search ):
+                path = os.path.join( dir_to_search, filename )
+                if os.path.isfile( path ) and is_broken_shortcut( path ):
+                    if args.clean:
+                        os.remove( path )
+                    else:
+                        print("Found broken shortcut at: " + path)
+                elif os.path.isdir( path ):
+                    dirs_to_search.append( path )
+        except PermissionError as e:
+            print(e)
 
-print("Took %s seconds to run." % (time.time() - start_time))
+    print("Took %s seconds to run." % (time.time() - start_time))
+
+if __name__=="__main__":
+    main()
