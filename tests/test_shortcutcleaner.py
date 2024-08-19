@@ -44,33 +44,33 @@ def test_is_broken_shortcut( tmp_path ):
 
     shell = win32com.client.Dispatch("WScript.Shell")
     working_shortcut1 = shell.CreateShortCut( str( working_path1 ) )
-    working_shortcut1.Targetpath = str( target_path )
+    working_shortcut1.TargetPath = str( target_path )
     working_shortcut1.save()
 
     working_shortcut2 = shell.CreateShortCut( str( working_path2 ) )
-    working_shortcut2.Targetpath = str( tmp_path / "target_dir" )
+    working_shortcut2.TargetPath = str( tmp_path / "target_dir" )
     working_shortcut2.save()
 
     broken_shortcut1 = shell.CreateShortCut( str( broken_path1 ) )
     broken_shortcut1.save()
 
     broken_shortcut2 = shell.CreateShortCut( str( broken_path2 ) )
-    broken_shortcut2.Targetpath = str( tmp_path / "not_a_file" )
+    broken_shortcut2.TargetPath = str( tmp_path / "not_a_file" )
     broken_shortcut2.save()
 
     # broken_shortcut3 = shell.CreateShortCut( str( broken_path3 ) )
     # broken_shortcut3.save()
     #
     # broken_shortcut4 = shell.CreateShortCut( str( broken_path4 ) )
-    # broken_shortcut4.Targetpath = "not_a_valid_url"
+    # broken_shortcut4.TargetPath = "not_a_valid_url"
     # broken_shortcut4.save()
 
     broken_shortcut5 = shell.CreateShortCut( str( broken_path5 ) )
-    broken_shortcut5.Targetpath = str( tmp_path / "wrong_dir" / "target_file" )
+    broken_shortcut5.TargetPath = str( tmp_path / "wrong_dir" / "target_file" )
     broken_shortcut5.save()
 
     broken_shortcut6 = shell.CreateShortCut( str( broken_path6 ) )
-    broken_shortcut6.Targetpath = str( tmp_path / "not_a_dir" )
+    broken_shortcut6.TargetPath = str( tmp_path / "not_a_dir" )
     broken_shortcut6.save()
 
     assert is_broken_shortcut( str( working_path1 ) ) == False
