@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 from pywintypes import com_error
 import time
 import tkinter as tk
@@ -39,9 +40,20 @@ from urllib.parse import urlparse
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
-def is_file_shortcut( filepath ):
-    _, extension = os.path.splitext( filepath )
-    return extension == FILE_SHORTCUT_EXT
+def is_file_shortcut( shortcut ):
+    if isinstance( shortcut, str ):
+        _, extension = os.path.splitext( shortcut )
+        return extension == FILE_SHORTCUT_EXT
+    elif issubclass( type(shortcut), Path ):
+        return shortcut.suffix == FILE_SHORTCUT_EXT
+    # TODO: Find a better way to check if the shortcut is a COMObject shortcut
+    else:
+        try:
+            _, extension = os.path.splitext( shortcut.FullName )
+            return extension == FILE_SHORTCUT_EXT
+        except AttributeError:
+            return False
+
 
 def is_net_shortcut( filepath ):
     _, extension = os.path.splitext( filepath )
