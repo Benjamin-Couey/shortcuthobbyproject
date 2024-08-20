@@ -50,6 +50,10 @@ def is_file_shortcut( shortcut ):
     else:
         try:
             _, extension = os.path.splitext( shortcut.FullName )
+            # Since URL shortcuts do not have the RelativePath attribute, an
+            # alternative way to check if a COMObject shortcut is a file short
+            # cut would be to check for the presence of that attribute.
+            # return hasattr( shortcut, 'RelativePath' )
             return extension == FILE_SHORTCUT_EXT
         except AttributeError:
             return False
@@ -66,22 +70,6 @@ def is_net_shortcut( shortcut ):
             return extension == NET_SHORTCUT_EXT
         except AttributeError:
             return False
-
-def alt_is_file_shortcut( filepath ):
-    try:
-        shell = client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut( filepath )
-        return hasattr( shortcut, 'RelativePath' )
-    except com_error as e:
-        return False
-
-def alt_is_net_shortcut( filepath ):
-    try:
-        shell = client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut( filepath )
-        return not hasattr( shortcut, 'RelativePath' )
-    except com_error as e:
-        return False
 
 def is_valid_url( url ):
     try:
