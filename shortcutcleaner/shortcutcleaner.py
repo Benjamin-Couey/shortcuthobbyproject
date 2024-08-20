@@ -54,10 +54,18 @@ def is_file_shortcut( shortcut ):
         except AttributeError:
             return False
 
-
-def is_net_shortcut( filepath ):
-    _, extension = os.path.splitext( filepath )
-    return extension == NET_SHORTCUT_EXT
+def is_net_shortcut( shortcut ):
+    if isinstance( shortcut, str ):
+        _, extension = os.path.splitext( shortcut )
+        return extension == NET_SHORTCUT_EXT
+    elif issubclass( type(shortcut), Path ):
+        return shortcut.suffix == NET_SHORTCUT_EXT
+    else:
+        try:
+            _, extension = os.path.splitext( shortcut.FullName )
+            return extension == NET_SHORTCUT_EXT
+        except AttributeError:
+            return False
 
 def alt_is_file_shortcut( filepath ):
     try:
