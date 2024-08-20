@@ -79,21 +79,31 @@ def is_valid_url( url ):
     except AttributeError:
         return False
 
-def is_broken_shortcut( filepath ):
+def is_broken_shortcut( shortcut ):
     try:
-        shell = client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut( filepath )
-        if is_file_shortcut( filepath ):
+        if isinstance( shortcut, str ):
+            shell = client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut( shortcut )
+        elif issubclass( type(shortcut), Path ):
+            shell = client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut( str( shortcut ) )
+    except com_error as e:
+        # Will be raised if shortcut is not a path to a shortcut, in which case
+        # it can't be a broken shortcut.
+        # print( e )
+        return False
+    # TODO: Find a better way to check if the shortcut is a COMObject shortcut
+    # instead of just assuming.
+    try:
+        if is_file_shortcut( shortcut ):
             return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
-        elif is_net_shortcut( filepath ):
+        elif is_net_shortcut( shortcut ):
             return not is_valid_url( shortcut.TargetPath )
         else:
             # TODO: Report unknown type of shortcut encountered.
             return False
-    except com_error as e:
-        # Will be raised if filepath is not a shortcut, in which case it can't
-        # be a broken shortcut.
-        # print( e )
+    except AttributeError as e:
+        print(e)
         return False
 
 def main():

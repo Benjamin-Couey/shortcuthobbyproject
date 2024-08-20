@@ -90,11 +90,35 @@ def test_is_broken_shortcut( tmp_path ):
     broken_shortcut6.save()
 
     assert is_broken_shortcut( str( working_path1 ) ) == False
+    assert is_broken_shortcut( working_path1 ) == False
+    assert is_broken_shortcut( working_shortcut1 ) == False
+
     assert is_broken_shortcut( str( working_path2 ) ) == False
+    assert is_broken_shortcut( working_path2 ) == False
+    assert is_broken_shortcut( working_shortcut2 ) == False
+
     assert is_broken_shortcut( str( working_path3 ) ) == False
+    assert is_broken_shortcut( working_path3 ) == False
+    assert is_broken_shortcut( working_shortcut3 ) == False
+
     assert is_broken_shortcut( str( broken_path1 ) ) == True
+    assert is_broken_shortcut( broken_path1 ) == True
+    assert is_broken_shortcut( broken_shortcut1 ) == True
+
     assert is_broken_shortcut( str( broken_path2 ) ) == True
+    assert is_broken_shortcut( broken_path2 ) == True
+    assert is_broken_shortcut( broken_shortcut2 ) == True
+
     assert is_broken_shortcut( str( broken_path3 ) ) == True
+    assert is_broken_shortcut( broken_path3 ) == True
+    assert is_broken_shortcut( broken_shortcut3 ) == True
+
     # assert is_broken_shortcut( str( broken_path4 ) ) == True
+
     assert is_broken_shortcut( str( broken_path5 ) ) == True
+    assert is_broken_shortcut( broken_path5 ) == True
+    assert is_broken_shortcut( broken_shortcut5 ) == True
+
     assert is_broken_shortcut( str( broken_path6 ) ) == True
+    assert is_broken_shortcut( broken_path6 ) == True
+    assert is_broken_shortcut( broken_shortcut6 ) == True
