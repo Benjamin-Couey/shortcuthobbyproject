@@ -110,6 +110,8 @@ def main():
 
     start_time = time.time()
 
+    total_count = 0
+    total_size = 0
     dirs_to_search = [ start_dir ]
     while len( dirs_to_search ) > 0:
         dir_to_search = dirs_to_search.pop(0)
@@ -122,12 +124,15 @@ def main():
                         os.remove( path )
                     else:
                         print("Found broken shortcut at: " + path)
+                    total_size += os.path.getsize( path )
+                    total_count += 1
                 elif os.path.isdir( path ):
                     dirs_to_search.append( path )
         except PermissionError as e:
             print(e)
 
     print("Took %s seconds to run." % (time.time() - start_time))
+    print("Found %s broken shortcuts using %s total bytes." % (total_count, total_size))
 
 if __name__=="__main__":
     main()
