@@ -2,9 +2,9 @@ import pytest
 from shortcutcleaner.shortcutcleaner import *
 import win32com.client
 
-def test_is_file_shortcut( tmp_path ):
-    file_path = tmp_path / "testfile.lnk"
-    url_path = tmp_path / "testfile.url"
+def test_is_file_shortcut():
+    file_path = WindowsPath() / "testfile.lnk"
+    url_path = WindowsPath() / "testfile.url"
     shell = win32com.client.Dispatch("WScript.Shell")
     file_shortcut = shell.CreateShortCut( str( file_path ) )
     url_shortcut = shell.CreateShortCut( str( url_path ) )
@@ -16,9 +16,9 @@ def test_is_file_shortcut( tmp_path ):
     assert is_file_shortcut(url_shortcut) == False
     assert is_file_shortcut("testfile.txt") == False
 
-def test_is_net_shortcut( tmp_path ):
-    file_path = tmp_path / "testfile.lnk"
-    url_path = tmp_path / "testfile.url"
+def test_is_net_shortcut():
+    file_path = WindowsPath() / "testfile.lnk"
+    url_path = WindowsPath() / "testfile.url"
     shell = win32com.client.Dispatch("WScript.Shell")
     file_shortcut = shell.CreateShortCut( str( file_path ) )
     url_shortcut = shell.CreateShortCut( str( url_path ) )
