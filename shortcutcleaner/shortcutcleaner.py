@@ -162,13 +162,26 @@ def main():
         try:
             for filename in os.listdir( dir_to_search ):
                 path = os.path.join( dir_to_search, filename )
-                if os.path.isfile( path ) and is_broken_shortcut( path ):
-                    if args.clean:
-                        os.remove( path )
-                    else:
-                        print("Found broken shortcut at: " + path)
-                    total_size += os.path.getsize( path )
-                    total_count += 1
+                if os.path.isfile( path ):
+                    shortcut = None
+                    try:
+                        shell = client.Dispatch("WScript.Shell")
+                        shortcut = shell.CreateShortCut( path )
+                    except com_error as e:
+                        # Not a shortcut file.
+                        pass
+                    if shortcut:
+                        if is_target_drive_missing( shortcut ):
+                            # Possible the drive is just disconnected, so leave the
+                            # shortcut be.
+                            print("Found shortcut to missing drive " + shortcut.TargetPath + " at: " + path)
+                        elif is_broken_shortcut( shortcut ):
+                            if args.clean:
+                                os.remove( path )
+                            else:
+                                print("Found broken shortcut at: " + path)
+                            total_size += os.path.getsize( path )
+                            total_count += 1
                 elif os.path.isdir( path ):
                     dirs_to_search.append( path )
         except PermissionError as e:
