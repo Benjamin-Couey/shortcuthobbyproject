@@ -142,6 +142,14 @@ def main():
         action='store',
         default=False
     )
+    # TOOD: Add parsing function so that input is more flexible.
+    parser.add_argument(
+        '--clean_drives',
+        help='If shortcuts target these missing drives, they will be treated as broken shortcuts.',
+        action='store',
+        nargs='+',
+        default=[]
+    )
     args = parser.parse_args()
 
     root = tk.Tk()
@@ -171,11 +179,19 @@ def main():
                         # Not a shortcut file.
                         pass
                     if shortcut:
+                        broken = False
                         if is_target_drive_missing( shortcut ):
                             # Possible the drive is just disconnected, so leave the
                             # shortcut be.
-                            print("Found shortcut to missing drive " + shortcut.TargetPath + " at: " + path)
-                        elif is_broken_shortcut( shortcut ):
+                            drive, _ = os.path.splitdrive( shortcut.TargetPath )
+                            print("Found shortcut to missing drive " + drive + " at: " + path)
+                            if drive in args.clean_drives:
+                                print("Treating as broken because " + drive + " is in clean drives list.")
+                                broken = True
+                        else:
+                            broken = is_broken_shortcut( shortcut )
+
+                        if broken:
                             if args.clean:
                                 os.remove( path )
                             else:
