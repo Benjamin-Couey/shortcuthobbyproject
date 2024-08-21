@@ -37,6 +37,29 @@ def test_is_valid_url():
     assert is_valid_url(532) == False
     assert is_valid_url(u'dkakasdkjdjakdjadjfalskdjfalk') == False
 
+def test_is_target_drive_missing( tmp_path ):
+    working_path = tmp_path / "working_shortcut.lnk"
+    broken_path = tmp_path / "broken_shortcut.lnk"
+    # TODO: Come up with a better way to choose a drive that doesn't exist.
+    different_drive_path = "A:" / tmp_path.relative_to( tmp_path.drive )
+
+    shell = win32com.client.Dispatch("WScript.Shell")
+    working_shortcut = shell.CreateShortCut( str( working_path ) )
+    working_shortcut.TargetPath = str( tmp_path )
+    working_shortcut.save()
+
+    broken_shortcut = shell.CreateShortCut( str( broken_path ) )
+    broken_shortcut.TargetPath = str( different_drive_path )
+    broken_shortcut.save()
+
+    assert is_target_drive_missing( str( working_path ) ) == False
+    assert is_target_drive_missing( working_path ) == False
+    assert is_target_drive_missing( working_shortcut ) == False
+
+    assert is_target_drive_missing( str( broken_path ) ) == True
+    assert is_target_drive_missing( broken_path ) == True
+    assert is_target_drive_missing( broken_shortcut ) == True
+
 def test_is_broken_shortcut( tmp_path ):
     target_path = tmp_path / "target_dir" / "target_file"
     target_path.parent.mkdir() # Create temporary directory

@@ -106,6 +106,31 @@ def is_broken_shortcut( shortcut ):
         print(e)
         return False
 
+def is_target_drive_missing( shortcut ):
+    try:
+        if isinstance( shortcut, str ):
+            shell = client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut( shortcut )
+        elif issubclass( type(shortcut), Path ):
+            shell = client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut( str( shortcut ) )
+    except com_error as e:
+        # Will be raised if shortcut is not a path to a shortcut, in which case
+        # it can't be a shortcut targeting a missing drive.
+        return False
+    try:
+        if is_file_shortcut( shortcut ):
+            drive, _ = os.path.splitdrive( shortcut.TargetPath )
+            return not os.path.exists( drive )
+        elif is_net_shortcut( shortcut ):
+            return False
+        else:
+            # TODO: Report unknown type of shortcut encountered.
+            return False
+    except AttributeError as e:
+        print(e)
+        return False
+
 def main():
     parser = argparse.ArgumentParser(
         prog="shortcutcleaner",
