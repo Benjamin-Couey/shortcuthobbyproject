@@ -1,3 +1,4 @@
+from pathlib import WindowsPath
 import pytest
 from shortcutcleaner.shortcutcleaner import *
 import win32com.client
