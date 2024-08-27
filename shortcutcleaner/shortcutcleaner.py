@@ -209,12 +209,12 @@ def main():
                             broken = is_broken_shortcut( shortcut )
 
                         if broken:
+                            total_size += os.path.getsize( path )
+                            total_count += 1
                             if args.clean:
                                 os.remove( path )
                             else:
                                 print("Found broken shortcut at: " + path)
-                            total_size += os.path.getsize( path )
-                            total_count += 1
                 elif os.path.isdir( path ):
                     dirs_to_search.append( path )
         except PermissionError as e:
