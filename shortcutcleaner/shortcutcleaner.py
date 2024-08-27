@@ -40,6 +40,22 @@ from urllib.parse import urlparse
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
+def parse_clean_drives( clean_drives ):
+    parsed_drives = []
+
+    for drive in clean_drives:
+        if len(drive) > 0:
+            alpha_drive = list( filter( str.isalpha, drive ) )
+            first_letter = alpha_drive.pop(0)
+            if len(alpha_drive) > 0:
+                print("There are multiple drive letter in the input " + drive + ". The whole input will be ignored.")
+            else:
+                parsed_drives.append( first_letter.upper() + ":" )
+        else:
+            print("There is an empty input which will be ignored.")
+
+    return parsed_drives
+
 def is_file_shortcut( shortcut ):
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
@@ -142,15 +158,16 @@ def main():
         action='store',
         default=False
     )
-    # TOOD: Add parsing function so that input is more flexible.
     parser.add_argument(
         '--clean_drives',
-        help='If shortcuts target these missing drives, they will be treated as broken shortcuts.',
+        help='A list of drive letters. If shortcuts target these missing drives, they will be treated as broken shortcuts. Strings with multiple letters will be ignored.',
         action='store',
         nargs='+',
         default=[]
     )
     args = parser.parse_args()
+
+    args.clean_drives = parse_clean_drives( args.clean_drives )
 
     root = tk.Tk()
     # Hide the Tkinter root so we only get the file dialog.
@@ -158,6 +175,7 @@ def main():
 
     start_dir = filedialog.askdirectory()
     print( "Starting search at: " + start_dir )
+    print( "Cleaning shortcuts to drives: " + str(args.clean_drives) )
 
     start_time = time.time()
 

@@ -3,6 +3,11 @@ import pytest
 from shortcutcleaner.shortcutcleaner import *
 import win32com.client
 
+def parse_clean_drives():
+    assert parse_clean_drives( [ "a", "B", "c:", "D:" ] ) == [ "A:", "B:", "C:", "D:" ]
+    assert parse_clean_drives( [ "abc", ";:,", "c:", "" ] ) == [ "C:" ]
+    assert parse_clean_drives( [] ) == []
+
 def test_is_file_shortcut():
     file_path = WindowsPath() / "testfile.lnk"
     url_path = WindowsPath() / "testfile.url"
