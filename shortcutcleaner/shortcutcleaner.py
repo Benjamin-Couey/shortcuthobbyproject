@@ -6,6 +6,7 @@ import time
 import tkinter as tk
 from tkinter import filedialog
 from win32com import client
+from win32com.client import CDispatch
 from urllib.parse import urlparse
 
 # Some things to consider about optimizing the performance of this project:
@@ -62,8 +63,7 @@ def is_file_shortcut( shortcut ):
         return extension == FILE_SHORTCUT_EXT
     elif issubclass( type(shortcut), Path ):
         return shortcut.suffix == FILE_SHORTCUT_EXT
-    # TODO: Find a better way to check if the shortcut is a COMObject shortcut
-    else:
+    elif isinstance( shortcut, CDispatch ):
         try:
             _, extension = os.path.splitext( shortcut.FullName )
             # Since URL shortcuts do not have the RelativePath attribute, an
@@ -73,6 +73,8 @@ def is_file_shortcut( shortcut ):
             return extension == FILE_SHORTCUT_EXT
         except AttributeError:
             return False
+    else:
+        raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
 def is_net_shortcut( shortcut ):
     if isinstance( shortcut, str ):
@@ -80,12 +82,14 @@ def is_net_shortcut( shortcut ):
         return extension == NET_SHORTCUT_EXT
     elif issubclass( type(shortcut), Path ):
         return shortcut.suffix == NET_SHORTCUT_EXT
-    else:
+    elif isinstance( shortcut, CDispatch ):
         try:
             _, extension = os.path.splitext( shortcut.FullName )
             return extension == NET_SHORTCUT_EXT
         except AttributeError:
             return False
+    else:
+        raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
 def is_valid_url( url ):
     try:
@@ -96,6 +100,7 @@ def is_valid_url( url ):
         return False
 
 def is_broken_shortcut( shortcut ):
+    # Convert to a shortcut object if necessary.
     try:
         if isinstance( shortcut, str ):
             shell = client.Dispatch("WScript.Shell")
@@ -103,13 +108,16 @@ def is_broken_shortcut( shortcut ):
         elif issubclass( type(shortcut), Path ):
             shell = client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut( str( shortcut ) )
+        elif isinstance( shortcut, CDispatch ):
+            pass
+        else:
+            raise ValueError("Not a string, Path, or CDispatch shortcut.")
     except com_error as e:
         # Will be raised if shortcut is not a path to a shortcut, in which case
         # it can't be a broken shortcut.
         # print( e )
         return False
-    # TODO: Find a better way to check if the shortcut is a COMObject shortcut
-    # instead of just assuming.
+
     try:
         if is_file_shortcut( shortcut ):
             return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
@@ -122,7 +130,9 @@ def is_broken_shortcut( shortcut ):
         print(e)
         return False
 
+
 def is_target_drive_missing( shortcut ):
+    # Convert to a shortcut object if necessary.
     try:
         if isinstance( shortcut, str ):
             shell = client.Dispatch("WScript.Shell")
@@ -130,10 +140,15 @@ def is_target_drive_missing( shortcut ):
         elif issubclass( type(shortcut), Path ):
             shell = client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut( str( shortcut ) )
+        elif isinstance( shortcut, CDispatch ):
+            pass
+        else:
+            raise ValueError("Not a string, Path, or CDispatch shortcut.")
     except com_error as e:
         # Will be raised if shortcut is not a path to a shortcut, in which case
         # it can't be a shortcut targeting a missing drive.
         return False
+
     try:
         if is_file_shortcut( shortcut ):
             drive, _ = os.path.splitdrive( shortcut.TargetPath )

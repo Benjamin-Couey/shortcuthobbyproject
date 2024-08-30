@@ -21,6 +21,10 @@ def test_is_file_shortcut():
     assert is_file_shortcut(file_shortcut) == True
     assert is_file_shortcut(url_shortcut) == False
     assert is_file_shortcut("testfile.txt") == False
+    with pytest.raises(ValueError):
+        is_file_shortcut(1)
+        is_file_shortcut(b'1')
+        is_file_shortcut(True)
 
 def test_is_net_shortcut():
     file_path = WindowsPath() / "testfile.lnk"
@@ -35,6 +39,10 @@ def test_is_net_shortcut():
     assert is_net_shortcut(file_shortcut) == False
     assert is_net_shortcut(url_shortcut) == True
     assert is_net_shortcut("testfile.txt") == False
+    with pytest.raises(ValueError):
+        is_net_shortcut(1)
+        is_net_shortcut(b'1')
+        is_net_shortcut(True)
 
 def test_is_valid_url():
     assert is_valid_url('http://www.cwi.nl:80/%7Eguido/Python.html') == True
@@ -65,6 +73,11 @@ def test_is_target_drive_missing( tmp_path ):
     assert is_target_drive_missing( str( broken_path ) ) == True
     assert is_target_drive_missing( broken_path ) == True
     assert is_target_drive_missing( broken_shortcut ) == True
+
+    with pytest.raises(ValueError):
+        is_target_drive_missing(1)
+        is_target_drive_missing(b'1')
+        is_target_drive_missing(True)
 
 def test_is_broken_shortcut( tmp_path ):
     target_path = tmp_path / "target_dir" / "target_file"
@@ -151,3 +164,8 @@ def test_is_broken_shortcut( tmp_path ):
     assert is_broken_shortcut( str( broken_path6 ) ) == True
     assert is_broken_shortcut( broken_path6 ) == True
     assert is_broken_shortcut( broken_shortcut6 ) == True
+
+    with pytest.raises(ValueError):
+        is_broken_shortcut(1)
+        is_broken_shortcut(b'1')
+        is_broken_shortcut(True)
