@@ -92,12 +92,18 @@ def is_net_shortcut( shortcut ):
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
 def is_valid_url( url ):
-    try:
+    if isinstance( url, str ):
         result = urlparse( url )
-        return bool( result.scheme and result.netloc )
-        # return all( [ result.scheme, result.netloc ] )
-    except AttributeError:
-        return False
+        # It is possible for a URL shortcut to point to a file on the local
+        # filesystem, in which case it should be handled like a file shortcut.
+        if result.scheme and result.scheme == "file" and not result.netloc and result.path:
+            path = result.path.strip("/")
+            return os.path.isfile( path ) or os.path.isdir( path )
+        else:
+            return bool( result.scheme and result.netloc )
+            # return all( [ result.scheme, result.netloc ] )
+    else:
+        raise ValueError("Not a string.")
 
 def is_broken_shortcut( shortcut ):
     # Convert to a shortcut object if necessary.

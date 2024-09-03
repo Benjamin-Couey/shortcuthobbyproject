@@ -44,12 +44,25 @@ def test_is_net_shortcut():
         is_net_shortcut(b'1')
         is_net_shortcut(True)
 
-def test_is_valid_url():
+def test_is_valid_url( tmp_path ):
     assert is_valid_url('http://www.cwi.nl:80/%7Eguido/Python.html') == True
     assert is_valid_url('https://stackoverflow.com') == True
-    assert is_valid_url('/data/Python.html') == False
-    assert is_valid_url(532) == False
-    assert is_valid_url(u'dkakasdkjdjakdjadjfalskdjfalk') == False
+    target_path = tmp_path / "target_dir" / "target_file"
+    target_path.parent.mkdir() # Create temporary directory
+    target_path.touch() # Create temporary file
+    target_path_url = "file:///" + str( target_path )
+    target_dir_url = "file:///" + str( tmp_path / "target_dir" )
+    not_a_file_url = "file:///" + str( tmp_path / "not_a_file" )
+    assert is_valid_url(str(target_path)) == False
+    assert is_valid_url(not_a_file_url) == False
+    assert is_valid_url(target_path_url) == True
+    assert is_valid_url(target_dir_url) == True
+    assert is_valid_url("https://stackoverflow.com/" + str( target_path )) == True
+    assert is_valid_url("https://stackoverflow.com/" + str( tmp_path / "not_a_file" )) == True
+    with pytest.raises(ValueError):
+        is_valid_url(1)
+        is_valid_url(b'1')
+        is_valid_url(True)
 
 def test_is_target_drive_missing( tmp_path ):
     working_path = tmp_path / "working_shortcut.lnk"
