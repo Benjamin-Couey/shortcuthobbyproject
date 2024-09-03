@@ -127,7 +127,22 @@ def is_broken_shortcut( shortcut ):
 
     try:
         if is_file_shortcut( shortcut ):
-            return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
+            if not shortcut.TargetPath:
+                # Address corner cases here.
+                # It is possible for .lnk files to have a TargetPath that points to
+                # a URL or a system program like Control Panel. In these cases, the
+                # TargetPath of the shortcut object returned by shell.CreateShortCut
+                # will be empty (even if the shortcut itself works). Since the script
+                # currently can't differentiate between a working or broken shortcut
+                # in this case, it should just return False so the mainloop doesn't
+                # try to clean it.
+                # TODO: Figure out a way to actually get the target path of .lnk files
+                # in these corner cases and more accurately determine if they are
+                # valid.
+                print("Encountered a CDispatch object with an empty TargetPath at " + shortcut.FullName)
+                return False
+            else:
+                return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
         elif is_net_shortcut( shortcut ):
             return not is_valid_url( shortcut.TargetPath )
         else:

@@ -99,7 +99,7 @@ def test_is_broken_shortcut( tmp_path ):
     working_path1 = tmp_path / "working_shortcut1.lnk"
     working_path2 = tmp_path / "working_shortcut2.lnk"
     working_path3 = tmp_path / "working_shortcut3.url"
-    broken_path1 = tmp_path / "broken_shortcut1.lnk"
+    empty_path = tmp_path / "empty_shortcut.lnk"
     broken_path2 = tmp_path / "broken_shortcut2.lnk"
     broken_path3 = tmp_path / "broken_shortcut3.url"
     # broken_path4 = tmp_path / "broken_shortcut4.url"
@@ -119,8 +119,8 @@ def test_is_broken_shortcut( tmp_path ):
     working_shortcut3.TargetPath = "https://a_valid_url"
     working_shortcut3.save()
 
-    broken_shortcut1 = shell.CreateShortCut( str( broken_path1 ) )
-    broken_shortcut1.save()
+    empty_shortcut = shell.CreateShortCut( str( empty_path ) )
+    empty_shortcut.save()
 
     broken_shortcut2 = shell.CreateShortCut( str( broken_path2 ) )
     broken_shortcut2.TargetPath = str( tmp_path / "not_a_file" )
@@ -156,9 +156,9 @@ def test_is_broken_shortcut( tmp_path ):
     assert is_broken_shortcut( working_path3 ) == False
     assert is_broken_shortcut( working_shortcut3 ) == False
 
-    assert is_broken_shortcut( str( broken_path1 ) ) == True
-    assert is_broken_shortcut( broken_path1 ) == True
-    assert is_broken_shortcut( broken_shortcut1 ) == True
+    assert is_broken_shortcut( str( empty_path ) ) == False
+    assert is_broken_shortcut( empty_path ) == False
+    assert is_broken_shortcut( empty_shortcut ) == False
 
     assert is_broken_shortcut( str( broken_path2 ) ) == True
     assert is_broken_shortcut( broken_path2 ) == True
