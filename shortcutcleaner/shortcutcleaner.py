@@ -113,9 +113,10 @@ def is_broken_shortcut( shortcut ):
         else:
             raise ValueError("Not a string, Path, or CDispatch shortcut.")
     except com_error as e:
-        # Will be raised if shortcut is not a path to a shortcut, in which case
-        # it can't be a broken shortcut.
-        # print( e )
+        # Will be raised by CreateShortCut() if shortcut is a str or Path that
+        # does not point to a shortcut file, in which case it can't be a broken
+        # shortcut.
+        print(e)
         return False
 
     try:
@@ -124,7 +125,7 @@ def is_broken_shortcut( shortcut ):
         elif is_net_shortcut( shortcut ):
             return not is_valid_url( shortcut.TargetPath )
         else:
-            # TODO: Report unknown type of shortcut encountered.
+            print("Encountered a CDispatch object that is not a recognized shortcut type.")
             return False
     except AttributeError as e:
         print(e)
@@ -145,8 +146,10 @@ def is_target_drive_missing( shortcut ):
         else:
             raise ValueError("Not a string, Path, or CDispatch shortcut.")
     except com_error as e:
-        # Will be raised if shortcut is not a path to a shortcut, in which case
-        # it can't be a shortcut targeting a missing drive.
+        # Will be raised by CreateShortCut() if shortcut is a str or Path that
+        # does not point to a shortcut file, in which case it can't be a broken
+        # shortcut.
+        print(e)
         return False
 
     try:
@@ -156,7 +159,7 @@ def is_target_drive_missing( shortcut ):
         elif is_net_shortcut( shortcut ):
             return False
         else:
-            # TODO: Report unknown type of shortcut encountered.
+            print("Encountered a CDispatch object that is not a recognized shortcut type.")
             return False
     except AttributeError as e:
         print(e)
