@@ -68,8 +68,8 @@ def test_is_target_drive_missing( tmp_path ):
     working_path = tmp_path / "working_shortcut.lnk"
     broken_path = tmp_path / "broken_shortcut.lnk"
     # TODO: Come up with a better way to choose a drive that doesn't exist.
-    different_drive_path = "A:" / tmp_path.relative_to( tmp_path.drive )
-
+    different_drive_path = "A:" / WindowsPath( *tmp_path.parts[1:] )
+    
     shell = win32com.client.Dispatch("WScript.Shell")
     working_shortcut = shell.CreateShortCut( str( working_path ) )
     working_shortcut.TargetPath = str( tmp_path )
