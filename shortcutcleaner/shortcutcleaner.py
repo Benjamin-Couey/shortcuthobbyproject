@@ -54,9 +54,9 @@ def is_file_shortcut( shortcut ):
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
         return extension == FILE_SHORTCUT_EXT
-    elif issubclass( type(shortcut), Path ):
+    if issubclass( type(shortcut), Path ):
         return shortcut.suffix == FILE_SHORTCUT_EXT
-    elif isinstance( shortcut, CDispatch ):
+    if isinstance( shortcut, CDispatch ):
         try:
             _, extension = os.path.splitext( shortcut.FullName )
             # Since URL shortcuts do not have the RelativePath attribute, an
@@ -77,9 +77,9 @@ def is_net_shortcut( shortcut ):
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
         return extension == NET_SHORTCUT_EXT
-    elif issubclass( type(shortcut), Path ):
+    if issubclass( type(shortcut), Path ):
         return shortcut.suffix == NET_SHORTCUT_EXT
-    elif isinstance( shortcut, CDispatch ):
+    if isinstance( shortcut, CDispatch ):
         try:
             _, extension = os.path.splitext( shortcut.FullName )
             return extension == NET_SHORTCUT_EXT
@@ -100,11 +100,8 @@ def is_valid_url( url ):
         if result.scheme and result.scheme == "file" and not result.netloc and result.path:
             path = result.path.strip("/")
             return os.path.isfile( path ) or os.path.isdir( path )
-        else:
-            return bool( result.scheme and result.netloc )
-            # return all( [ result.scheme, result.netloc ] )
-    else:
-        raise ValueError("Not a string.")
+        return bool( result.scheme and result.netloc )
+    raise ValueError("Not a string.")
 
 def is_broken_shortcut( shortcut ):
     """
@@ -147,13 +144,11 @@ def is_broken_shortcut( shortcut ):
                 # valid.
                 print("Encountered a CDispatch object with an empty TargetPath at " + shortcut.FullName)
                 return False
-            else:
-                return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
-        elif is_net_shortcut( shortcut ):
+            return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
+        if is_net_shortcut( shortcut ):
             return not is_valid_url( shortcut.TargetPath )
-        else:
-            print("Encountered a CDispatch object that is not a recognized shortcut type.")
-            return False
+        print("Encountered a CDispatch object that is not a recognized shortcut type.")
+        return False
     except AttributeError as e:
         print(e)
         return False
@@ -187,11 +182,10 @@ def is_target_drive_missing( shortcut ):
         if is_file_shortcut( shortcut ):
             drive, _ = os.path.splitdrive( shortcut.TargetPath )
             return not os.path.exists( drive )
-        elif is_net_shortcut( shortcut ):
+        if is_net_shortcut( shortcut ):
             return False
-        else:
-            print("Encountered a CDispatch object that is not a recognized shortcut type.")
-            return False
+        print("Encountered a CDispatch object that is not a recognized shortcut type.")
+        return False
     except AttributeError as e:
         print(e)
         return False
