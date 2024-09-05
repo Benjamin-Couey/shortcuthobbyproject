@@ -1,3 +1,17 @@
+"""
+Script to search for and clean broken Windows shortcut files.
+
+The script will ask you to select a starting directory, and then search that
+directory and its subdirectories for broken shortcuts. A shortcut is considered
+broken if it:
+    Targets a file or directory that is not there.
+    Targets an invalid URL.
+    Targets a file or directory on a detached drive specified in the --clean_drives
+    option.
+
+By default, the script will only report broken shortcuts. Run it with the --clean
+option to delete broken shortcuts.
+"""
 import argparse
 import os
 from pathlib import Path
@@ -9,39 +23,14 @@ from win32com import client
 from win32com.client import CDispatch
 from urllib.parse import urlparse
 
-# Some things to consider about optimizing the performance of this project:
-# Practically speaking, it probably isn't going to be run very frequently. After one
-# run that cleans up all broken shortcuts, it will take a significant amount of time
-# (I assume?) before enough shortcuts build up to justify running this again.
-#
-# Probably fine to just make the project and clarify in the README all the assumptions
-# I made and the reason I didn't make certian optimizations
-# "the bottleneck is IO not CPU cycles, so parallelization won't have any benefit"
-# "predicting the distribution of broken shortcuts on a system would require more
-# research than makes sense for this project"
-#
-# Will be a good oportunity to show the test harness for a project like this that
-# relies heavily on the file system.
-#
-# Can't easily determine whether a URL shortcut is broken or not # without
-# following the URL which seems like something a shortcut cleaner shouldn't
-# automatically do. Current thought on how to handle this is to have the program just
-# report url shortcuts it finds and let the user sort them out? Make it configurable?
-# Option to just scrub all url shortcuts? Urls that match a certain pattern?
-#
-# Should auto scrub url shortcuts that don't have valid urls.
-# Possible this doesn't matter, or at least doesn't practiclaly matter as Windows
-# won't let you create a url shortcut with an invalid url (it will always prepend
-# http://).
-#
-# Ideally, script would have some way to avoid installed packages as those probably
-# don't have shortcuts, much less broken ones.
-# TOOD: Update Windows python install to 3.9
-
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
 def parse_clean_drives( clean_drives ):
+    """
+    Given list of characters, parse them to be drive letters and return
+    reuslting list.
+    """
     parsed_drives = []
 
     for drive in clean_drives:
@@ -58,6 +47,10 @@ def parse_clean_drives( clean_drives ):
     return parsed_drives
 
 def is_file_shortcut( shortcut ):
+    """
+    Given a string, Path, or CDispatch object, return whether shortcut is a .lnk
+    file shortcut.
+    """
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
         return extension == FILE_SHORTCUT_EXT
@@ -77,6 +70,10 @@ def is_file_shortcut( shortcut ):
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
 def is_net_shortcut( shortcut ):
+    """
+    Given a string, Path, or CDispatch object, return whether shortcut is a .url
+    net shortcut.
+    """
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
         return extension == NET_SHORTCUT_EXT
@@ -92,6 +89,10 @@ def is_net_shortcut( shortcut ):
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
 def is_valid_url( url ):
+    """
+    Given a string, return whether it is a valid URL or points to a file on the
+    local filesystem.
+    """
     if isinstance( url, str ):
         result = urlparse( url )
         # It is possible for a URL shortcut to point to a file on the local
@@ -106,6 +107,11 @@ def is_valid_url( url ):
         raise ValueError("Not a string.")
 
 def is_broken_shortcut( shortcut ):
+    """
+    Given a string, Path, or CDispatch object, return whether shortcut is a
+    broken shortcut. That is, it targets a file that doesn't exist or an invalid
+    URL.
+    """
     # Convert to a shortcut object if necessary.
     try:
         if isinstance( shortcut, str ):
@@ -154,6 +160,10 @@ def is_broken_shortcut( shortcut ):
 
 
 def is_target_drive_missing( shortcut ):
+    """
+    Given a string, Path, or CDispatch object, return whether shortcut targets
+    a file on a drive that is not currently connected.
+    """
     # Convert to a shortcut object if necessary.
     try:
         if isinstance( shortcut, str ):
@@ -187,9 +197,15 @@ def is_target_drive_missing( shortcut ):
         return False
 
 def main():
+    """
+    Parse user input, get starting directory, and enter main loop. In main loop,
+    search for broken shortcuts in starting directory or subdirectories, and
+    either report or delete them based on user input.
+    """
     parser = argparse.ArgumentParser(
         prog="shortcutcleaner",
-        description="Search for and clean broken shortcuts."
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter # Preserve docstring formatting
     )
     parser.add_argument(
         '--clean',
@@ -198,7 +214,9 @@ def main():
     )
     parser.add_argument(
         '--clean_drives',
-        help='A list of drive letters. If shortcuts target these missing drives, they will be treated as broken shortcuts. Strings with multiple letters will be ignored.',
+        help='''A list of drive letters. If shortcuts target these missing drives,
+        they will be treated as broken shortcuts. Strings with multiple letters
+        will be ignored.''',
         action='store',
         nargs='+',
         default=[]
