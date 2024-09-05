@@ -15,13 +15,14 @@ option to delete broken shortcuts.
 import argparse
 import os
 from pathlib import Path
-from pywintypes import com_error
 import time
 import tkinter as tk
 from tkinter import filedialog
+from urllib.parse import urlparse
+
+from pywintypes import com_error
 from win32com import client
 from win32com.client import CDispatch
-from urllib.parse import urlparse
 
 type Shortcut = str | Path | CDispatch
 FILE_SHORTCUT_EXT = '.lnk'
@@ -39,7 +40,7 @@ def parse_clean_drives( clean_drives: list[str] ) -> bool:
             alpha_drive = list( filter( str.isalpha, drive ) )
             first_letter = alpha_drive.pop(0)
             if len(alpha_drive) > 0:
-                print("There are multiple drive letter in the input " + drive + ". The whole input will be ignored.")
+                print( f"There are multiple drive letter in the input {drive}. The whole input will be ignored." )
             else:
                 parsed_drives.append( first_letter.upper() + ":" )
         else:
@@ -155,7 +156,7 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
                 # TODO: Figure out a way to actually get the target path of .lnk files
                 # in these corner cases and more accurately determine if they are
                 # valid.
-                print("Encountered a CDispatch object with an empty TargetPath at " + shortcut.FullName)
+                print(f"Encountered a CDispatch object with an empty TargetPath at {shortcut.FullName}.")
                 return False
             return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
         if is_net_shortcut( shortcut ):
@@ -240,8 +241,8 @@ def main():
     root.withdraw()
 
     start_dir = filedialog.askdirectory()
-    print( "Starting search at: " + start_dir )
-    print( "Cleaning shortcuts to drives: " + str(args.clean_drives) )
+    print( f"Starting search at {start_dir}." )
+    print( f"Treating shortcuts to drives as broken: {args.clean_drives}." )
 
     start_time = time.time()
 
@@ -268,9 +269,9 @@ def main():
                             # Possible the drive is just disconnected, so leave the
                             # shortcut be.
                             drive, _ = os.path.splitdrive( shortcut.TargetPath )
-                            print("Found shortcut to missing drive " + drive + " at: " + path)
+                            print(f"Found shortcut to missing drive {drive} at {path}.")
                             if drive in args.clean_drives:
-                                print("Treating as broken because " + drive + " is in clean drives list.")
+                                print(f"Treating as broken because {drive} is in clean drives list.")
                                 broken = True
                         else:
                             broken = is_broken_shortcut( shortcut )
@@ -281,14 +282,14 @@ def main():
                             if args.clean:
                                 os.remove( path )
                             else:
-                                print("Found broken shortcut at: " + path)
+                                print(f"Found broken shortcut at {path}.")
                 elif os.path.isdir( path ):
                     dirs_to_search.append( path )
         except PermissionError as e:
             print(e)
 
-    print("Took %s seconds to run." % (time.time() - start_time))
-    print("Found %s broken shortcuts using %s total bytes." % (total_count, total_size))
+    print(f"Took {(time.time() - start_time)} seconds to run.")
+    print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
 
 if __name__=="__main__":
     main()
