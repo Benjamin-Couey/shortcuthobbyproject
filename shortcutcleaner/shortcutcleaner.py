@@ -23,13 +23,14 @@ from win32com import client
 from win32com.client import CDispatch
 from urllib.parse import urlparse
 
+type Shortcut = str | Path | CDispatch
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
-def parse_clean_drives( clean_drives ):
+def parse_clean_drives( clean_drives: list[str] ) -> bool:
     """
     Given list of characters, parse them to be drive letters and return
-    reuslting list.
+    resulting list.
     """
     parsed_drives = []
 
@@ -46,10 +47,13 @@ def parse_clean_drives( clean_drives ):
 
     return parsed_drives
 
-def is_file_shortcut( shortcut ):
+def is_file_shortcut( shortcut: Shortcut ) -> bool:
     """
     Given a string, Path, or CDispatch object, return whether shortcut is a .lnk
     file shortcut.
+
+    Exceptions:
+        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
     """
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
@@ -69,10 +73,13 @@ def is_file_shortcut( shortcut ):
     else:
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
-def is_net_shortcut( shortcut ):
+def is_net_shortcut( shortcut: Shortcut ) -> bool:
     """
     Given a string, Path, or CDispatch object, return whether shortcut is a .url
     net shortcut.
+
+    Exceptions:
+        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
     """
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
@@ -88,10 +95,13 @@ def is_net_shortcut( shortcut ):
     else:
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
-def is_valid_url( url ):
+def is_valid_url( url: str ) -> bool:
     """
     Given a string, return whether it is a valid URL or points to a file on the
     local filesystem.
+
+    Exceptions:
+        Raises ValueError if url is not a string.
     """
     if isinstance( url, str ):
         result = urlparse( url )
@@ -103,11 +113,14 @@ def is_valid_url( url ):
         return bool( result.scheme and result.netloc )
     raise ValueError("Not a string.")
 
-def is_broken_shortcut( shortcut ):
+def is_broken_shortcut( shortcut: Shortcut ) -> bool:
     """
     Given a string, Path, or CDispatch object, return whether shortcut is a
     broken shortcut. That is, it targets a file that doesn't exist or an invalid
     URL.
+
+    Exceptions:
+        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
     """
     # Convert to a shortcut object if necessary.
     try:
@@ -154,10 +167,13 @@ def is_broken_shortcut( shortcut ):
         return False
 
 
-def is_target_drive_missing( shortcut ):
+def is_target_drive_missing( shortcut: Shortcut ) -> bool:
     """
     Given a string, Path, or CDispatch object, return whether shortcut targets
     a file on a drive that is not currently connected.
+
+    Exceptions:
+        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
     """
     # Convert to a shortcut object if necessary.
     try:
