@@ -249,7 +249,7 @@ def main():
                     try:
                         shell = client.Dispatch("WScript.Shell")
                         shortcut = shell.CreateShortCut( path )
-                    except com_error as e:
+                    except com_error:
                         # Not a shortcut file.
                         pass
                     if shortcut:
