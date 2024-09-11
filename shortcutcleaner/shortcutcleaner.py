@@ -242,6 +242,8 @@ def main():
 
     start_dir_var = tk.StringVar( root, "" )
     clean_var = tk.BooleanVar( root, args.clean )
+    clean_drives = args.clean_drives
+    add_drive_var = tk.StringVar( root, "" )
 
     frame = ttk.Frame( root, padding=10 )
     frame.grid()
@@ -259,16 +261,64 @@ def main():
 
     ttk.Checkbutton( frame, text="Clean broken shortcuts", variable=clean_var ).grid( column=0, row=3 )
 
-    ttk.Button( frame, text="Run", command=root.destroy ).grid( column=0, row=4 )
+    def validate_add_drive(input):
+        if not input:
+            return True
+        if len(input) > 1 or not input.isalpha():
+            return False
+        return True
+    validate_add_drive_wrapper = (root.register(validate_add_drive), '%P')
+
+    ttk.Label( frame, text="Clean drives" ).grid( column=0, row=4 )
+    add_drive_entry = ttk.Entry(
+        frame,
+        textvariable=add_drive_var,
+        validate="key",
+        validatecommand=validate_add_drive_wrapper
+    )
+    add_drive_entry.grid( column=0, row=5 )
+
+    def add_clean_drive( clean_drives ):
+        drive_to_add = add_drive_var.get()
+        if drive_to_add:
+            clean_drives.append( drive_to_add )
+            drive_frame = RemovableDrive( clean_drive_frame, drive_to_add )
+            drive_frame.pack()
+            print( clean_drives )
+        add_drive_var.set("")
+
+    add_drive_button = ttk.Button( frame, text="Add drive", command=lambda: add_clean_drive(clean_drives) )
+    add_drive_button.grid( column=0, row=6 )
+
+    class RemovableDrive(ttk.Frame):
+        def __init__( self, parent, drive, **options ):
+            self.drive = drive
+            ttk.Frame.__init__( self, parent, **options )
+            ttk.Label( self, text=drive ).grid(row=0, column=0)
+            ttk.Button( self, text="X", command=self.remove ).grid(row=0, column=1)
+
+        def remove( self ):
+            clean_drives.remove( self.drive )
+            self.destroy()
+
+    clean_drive_frame = ttk.Frame( frame, padding=10 )
+    clean_drive_frame.grid( column=0, row=7 )
+
+    for drive in clean_drives:
+        drive_frame = RemovableDrive( clean_drive_frame, drive )
+        drive_frame.pack()
+
+    ttk.Button( frame, text="Run", command=root.destroy ).grid( column=0, row=8 )
 
     root.mainloop()
 
     start_dir = start_dir_var.get()
     clean = clean_var.get()
+    clean_drives = parse_clean_drives( clean_drives )
     print( f"Starting search at {start_dir}." )
     if clean:
         print( "Cleaning broken drives." )
-    print( f"Treating shortcuts to drives as broken: {args.clean_drives}." )
+    print( f"Treating shortcuts to drives as broken: {clean_drives}." )
 
     start_time = time.time()
 
@@ -296,7 +346,7 @@ def main():
                             # shortcut be.
                             drive, _ = os.path.splitdrive( shortcut.TargetPath )
                             print(f"Found shortcut to missing drive {drive} at {path}.")
-                            if drive in args.clean_drives:
+                            if drive in clean_drives:
                                 print(f"Treating as broken because {drive} is in clean drives list.")
                                 broken = True
                         else:
