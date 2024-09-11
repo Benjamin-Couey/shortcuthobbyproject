@@ -18,6 +18,7 @@ from pathlib import Path
 import time
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import ttk
 from urllib.parse import urlparse
 
 from pywintypes import com_error
@@ -236,11 +237,30 @@ def main():
 
     args.clean_drives = parse_clean_drives( args.clean_drives )
 
+    # Start building Tkinter window
     root = tk.Tk()
-    # Hide the Tkinter root so we only get the file dialog.
-    root.withdraw()
 
-    start_dir = filedialog.askdirectory()
+    start_dir_var = tk.StringVar( root, "" )
+
+    frame = ttk.Frame( root, padding=10 )
+    frame.grid()
+
+    ttk.Label( frame, text="Starting directory" ).grid( column=0, row=0 )
+    start_dir_entry = ttk.Entry( frame, textvariable=start_dir_var )
+    start_dir_entry.grid( column=0, row=1 )
+
+    def browse_start_dir():
+        start_dir = filedialog.askdirectory()
+        start_dir_entry.insert(tk.END, start_dir)
+
+    start_dir_button = ttk.Button( frame, text="Select", command=browse_start_dir )
+    start_dir_button.grid( column=0, row=2 )
+
+    ttk.Button( frame, text="Run", command=root.destroy ).grid( column=0, row=3 )
+
+    root.mainloop()
+
+    start_dir = start_dir_var.get()
     print( f"Starting search at {start_dir}." )
     print( f"Treating shortcuts to drives as broken: {args.clean_drives}." )
 
