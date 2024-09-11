@@ -29,7 +29,7 @@ type Shortcut = str | Path | CDispatch
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
-def parse_clean_drives( clean_drives: list[str] ) -> bool:
+def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
     """
     Given list of characters, parse them to be drive letters and return
     resulting list.
