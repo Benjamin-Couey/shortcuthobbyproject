@@ -241,6 +241,7 @@ def main():
     root = tk.Tk()
 
     start_dir_var = tk.StringVar( root, "" )
+    clean_var = tk.BooleanVar( root, args.clean )
 
     frame = ttk.Frame( root, padding=10 )
     frame.grid()
@@ -256,12 +257,17 @@ def main():
     start_dir_button = ttk.Button( frame, text="Select", command=browse_start_dir )
     start_dir_button.grid( column=0, row=2 )
 
-    ttk.Button( frame, text="Run", command=root.destroy ).grid( column=0, row=3 )
+    ttk.Checkbutton( frame, text="Clean broken shortcuts", variable=clean_var ).grid( column=0, row=3 )
+
+    ttk.Button( frame, text="Run", command=root.destroy ).grid( column=0, row=4 )
 
     root.mainloop()
 
     start_dir = start_dir_var.get()
+    clean = clean_var.get()
     print( f"Starting search at {start_dir}." )
+    if clean:
+        print( "Cleaning broken drives." )
     print( f"Treating shortcuts to drives as broken: {args.clean_drives}." )
 
     start_time = time.time()
@@ -299,7 +305,7 @@ def main():
                         if broken:
                             total_size += os.path.getsize( path )
                             total_count += 1
-                            if args.clean:
+                            if clean:
                                 os.remove( path )
                             else:
                                 print(f"Found broken shortcut at {path}.")
