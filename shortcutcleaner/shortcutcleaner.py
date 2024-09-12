@@ -292,10 +292,10 @@ def main():
     def add_clean_drive( clean_drives ):
         drive_to_add = add_drive_var.get()
         if drive_to_add:
-            clean_drives.append( drive_to_add )
-            drive_frame = RemovableDrive( clean_drive_frame, drive_to_add )
+            parsed_drive = parse_drive_str( drive_to_add )
+            clean_drives.append( parsed_drive )
+            drive_frame = RemovableDrive( clean_drive_frame, parsed_drive )
             drive_frame.pack()
-            print( clean_drives )
         add_drive_var.set("")
 
     add_drive_button = ttk.Button( frame, text="Add drive", command=lambda: add_clean_drive(clean_drives) )
@@ -325,7 +325,6 @@ def main():
 
     start_dir = start_dir_var.get()
     clean = clean_var.get()
-    clean_drives = parse_clean_drives( clean_drives )
     print( f"Starting search at {start_dir}." )
     if clean:
         print( "Cleaning broken drives." )
