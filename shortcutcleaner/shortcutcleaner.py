@@ -29,6 +29,19 @@ type Shortcut = str | Path | CDispatch
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
+class NoTargetPathException(Exception):
+    """
+    Exception for when a .lnk shortcut has an empty TargetPath attribute.
+
+    Attributes:
+        message: The error message.
+        path: Path to the shortcut file which caused the exception.
+    """
+
+    def __init__(self, message, path):
+        super().__init__(message)
+        self.path = path
+
 def parse_drive_str( drive: str ) -> str:
     """
     Given string, parse it to be a drive letter and return. Empty strings, or
@@ -134,6 +147,8 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
 
     Exceptions:
         Raises ValueError if shortcut is not a string, Path, or CDispatch object.
+        Raises NoTargetPathException if shortcut is a file shortcut without a
+        target path.
     """
     # Convert to a shortcut object if necessary.
     try:
@@ -157,19 +172,20 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
     try:
         if is_file_shortcut( shortcut ):
             if not shortcut.TargetPath:
-                # Address corner cases here.
-                # It is possible for .lnk files to have a TargetPath that points to
-                # a URL or a system program like Control Panel. In these cases, the
-                # TargetPath of the shortcut object returned by shell.CreateShortCut
-                # will be empty (even if the shortcut itself works). Since the script
-                # currently can't differentiate between a working or broken shortcut
-                # in this case, it should just return False so the mainloop doesn't
-                # try to clean it.
+                # It is possible for .lnk files to have a TargetPath that points
+                # to a URL or a program like Control Panel not in the file system
+                # (I do not fully understand this second case). In these cases,
+                # the TargetPath of the shortcut object returned by shell.CreateShortCut
+                # will be empty (even if the shortcut itself works) and the sciprt
+                # won't be able to differentiate between a working or broken
+                # shortcut.
                 # TODO: Figure out a way to actually get the target path of .lnk files
                 # in these corner cases and more accurately determine if they are
                 # valid.
-                print(f"Encountered a CDispatch object with an empty TargetPath at {shortcut.FullName}.")
-                return False
+                raise NoTargetPathException(
+                    f"Encountered a CDispatch object with an empty TargetPath at {shortcut.FullName}.",
+                    shortcut.FullName
+                )
             return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
         if is_net_shortcut( shortcut ):
             return not is_valid_url( shortcut.TargetPath )
@@ -187,6 +203,8 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
 
     Exceptions:
         Raises ValueError if shortcut is not a string, Path, or CDispatch object.
+        Raises NoTargetPathException if shortcut is a file shortcut without a
+        target path.
     """
     # Convert to a shortcut object if necessary.
     try:
@@ -209,6 +227,19 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
 
     try:
         if is_file_shortcut( shortcut ):
+            if not shortcut.TargetPath:
+                # It is possible for .lnk files to have a TargetPath that points
+                # to a URL or a program like Control Panel not in the file system
+                # (I do not fully understand this second case). In these cases,
+                # the TargetPath of the shortcut object returned by shell.CreateShortCut
+                # will be empty (even if the shortcut itself works). While in these
+                # two cases, the shortcut is not targeting a missing drive,
+                # because I do not fully understand this behavior, I will treat
+                # it as exceptional so it does not become harder to track later.
+                raise NoTargetPathException(
+                    f"Encountered a CDispatch object with an empty TargetPath at {shortcut.FullName}.",
+                    shortcut.FullName
+                )
             drive, _ = os.path.splitdrive( shortcut.TargetPath )
             return not os.path.exists( drive )
         if is_net_shortcut( shortcut ):
@@ -353,16 +384,24 @@ def main():
                         pass
                     if shortcut:
                         broken = False
-                        if is_target_drive_missing( shortcut ):
-                            # Possible the drive is just disconnected, so leave the
-                            # shortcut be.
-                            drive, _ = os.path.splitdrive( shortcut.TargetPath )
-                            print(f"Found shortcut to missing drive {drive} at {path}.")
-                            if drive in clean_drives:
-                                print(f"Treating as broken because {drive} is in clean drives list.")
-                                broken = True
-                        else:
-                            broken = is_broken_shortcut( shortcut )
+                        try:
+                            if is_target_drive_missing( shortcut ):
+                                # Possible the drive is just disconnected, so leave the
+                                # shortcut be.
+                                drive, _ = os.path.splitdrive( shortcut.TargetPath )
+                                print(f"Found shortcut to missing drive {drive} at {path}.")
+                                if drive in clean_drives:
+                                    print(f"Treating as broken because {drive} is in clean drives list.")
+                                    broken = True
+                            else:
+                                broken = is_broken_shortcut( shortcut )
+                        except NoTargetPathException as e:
+                            print( e )
+                            # Since the script can't currently handle this weird
+                            # case, it should report it to the user and not try
+                            # to clean the shortcut.
+                            broken = False
+                            pass
 
                         if broken:
                             total_size += os.path.getsize( path )
