@@ -29,6 +29,16 @@ type Shortcut = str | Path | CDispatch
 FILE_SHORTCUT_EXT = '.lnk'
 NET_SHORTCUT_EXT = '.url'
 
+def parse_drive_str( drive: str ) -> str:
+    """
+    Given string, parse it to be a drive letter and return. Empty strings, or
+    strings containing multiple characters will return None.
+    """
+    alpha_drive = list( filter( str.isalpha, drive ) )
+    if not len(alpha_drive) == 1:
+        return None
+    return alpha_drive[0].upper() + ":"
+
 def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
     """
     Given list of characters, parse them to be drive letters and return

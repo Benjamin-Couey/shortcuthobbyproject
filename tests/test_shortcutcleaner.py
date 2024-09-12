@@ -3,6 +3,13 @@ import pytest
 from shortcutcleaner.shortcutcleaner import *
 import win32com.client
 
+def parse_drive_str():
+    assert parse_drive_str( "" ) == None
+    assert parse_drive_str( "abc" ) == None
+    assert parse_drive_str( ";:" ) == None
+    assert parse_drive_str( "c:" ) == "C:"
+    assert parse_drive_str( "A" ) == "A:"
+
 def parse_clean_drives():
     assert parse_clean_drives( [ "a", "B", "c:", "D:" ] ) == [ "A:", "B:", "C:", "D:" ]
     assert parse_clean_drives( [ "abc", ";:,", "c:", "" ] ) == [ "C:" ]
@@ -69,7 +76,7 @@ def test_is_target_drive_missing( tmp_path ):
     broken_path = tmp_path / "broken_shortcut.lnk"
     # TODO: Come up with a better way to choose a drive that doesn't exist.
     different_drive_path = "A:" / WindowsPath( *tmp_path.parts[1:] )
-    
+
     shell = win32com.client.Dispatch("WScript.Shell")
     working_shortcut = shell.CreateShortCut( str( working_path ) )
     working_shortcut.TargetPath = str( tmp_path )
