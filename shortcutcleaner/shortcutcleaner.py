@@ -278,6 +278,8 @@ def main():
         if len(input) > 1 or not input.isalpha():
             return False
         return True
+        if parse_drive_str( input ) in clean_drives:
+        	return False
     validate_add_drive_wrapper = (root.register(validate_add_drive), '%P')
 
     ttk.Label( frame, text="Clean drives" ).grid( column=0, row=4 )
