@@ -42,7 +42,8 @@ def parse_drive_str( drive: str ) -> str:
 def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
     """
     Given list of characters, parse them to be drive letters and return
-    resulting list.
+    resulting list. Intended to parse user input and so reports cases where user
+    input is malformed and ignored.
     """
     parsed_drives = []
 
@@ -53,7 +54,7 @@ def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
             if len(alpha_drive) > 0:
                 print( f"There are multiple drive letter in the input {drive}. The whole input will be ignored." )
             else:
-                parsed_drives.append( first_letter.upper() + ":" )
+                parsed_drives.append( parse_drive_str(first_letter) )
         else:
             print("There is an empty input which will be ignored.")
 
