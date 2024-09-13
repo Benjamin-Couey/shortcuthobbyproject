@@ -1,6 +1,7 @@
 from pathlib import WindowsPath
 import pytest
 from shortcutcleaner.shortcutcleaner import *
+from shutil import rmtree
 import win32com.client
 
 def parse_drive_str():
@@ -71,37 +72,141 @@ def test_is_valid_url( tmp_path ):
         is_valid_url(b'1')
         is_valid_url(True)
 
-def test_is_target_drive_missing( tmp_path ):
-    working_path = tmp_path / "working_shortcut.lnk"
-    broken_path = tmp_path / "broken_shortcut.lnk"
-    empty_path = tmp_path / "empty_shortcut.lnk"
-    lnk_to_net_path = tmp_path / "lnk_to_net.lnk"
+@pytest.fixture(scope="session")
+def dir_of_shortcuts( tmp_path_factory ):
+    # Make basic directory structure.
+    start_dir = tmp_path_factory.mktemp("start")
+    sub_dir = start_dir / "sub"
+    sub_dir.mkdir()
+    # Make target dir and file for .lnk shortcuts.
+    target_dir = start_dir / "target_dir"
+    target_path = target_dir / "target_file"
+    target_dir.mkdir()
+    target_path.touch()
     # TODO: Come up with a better way to choose a drive that doesn't exist.
-    different_drive_path = "A:" / WindowsPath( *tmp_path.parts[1:] )
+    different_drive_path = "A:" / WindowsPath( *target_path.parts[1:] )
 
+    # Make paths for the various shortcuts to test.
+    working_file_lnk_path = start_dir / "working_file_shortcut.lnk"
+    working_dir_lnk_path = start_dir / "working_dir_shortcut.lnk"
+
+    working_url_path = start_dir / "working_url_shortcut.url"
+    working_file_url_path = start_dir / "working_file_url_shortcut.url"
+    working_dir_url_path = start_dir / "working_dir_url_shortcut.url"
+
+    not_a_file_lnk_path = start_dir / "not_a_file_lnk_shortcut.lnk"
+    wrong_dir_lnk_path = start_dir / "wrong_dir_lnk_shortcut.lnk"
+    not_a_dir_lnk_path = start_dir / "not_a_dir_lnk_shortcut.lnk"
+    different_drive_lnk_path = start_dir / "different_drive_lnk_shortcut.lnk"
+
+    # TODO: Find an appropriate way to test with a broken URL shortcut.
+    # An error will be raised if you try to assign an invalid URL to a URL
+    # shortcut.
+    shortcuts = {}
+    not_a_file_url_path = start_dir / "not_a_file_url_shortcut.url"
+    wrong_dir_url_path = start_dir / "wrong_dir_url_shortcut.url"
+    not_a_dir_url_path = start_dir / "not_a_dir_url_shortcut.url"
+
+    empty_lnk_path = start_dir / "empty_shortcut.lnk"
+    empty_url_path = start_dir / "empty_shortcut.url"
+    lnk_to_net_path = start_dir / "lnk_to_net.lnk"
+
+    # Create the actual shortcut files.
     shell = win32com.client.Dispatch("WScript.Shell")
-    working_shortcut = shell.CreateShortCut( str( working_path ) )
-    working_shortcut.TargetPath = str( tmp_path )
-    working_shortcut.save()
+    working_file_lnk_shortcut = shell.CreateShortCut( str( working_file_lnk_path ) )
+    working_file_lnk_shortcut.TargetPath = str( target_path )
+    working_file_lnk_shortcut.save()
+    shortcuts["working_file_lnk_shortcut"] = working_file_lnk_shortcut
 
-    broken_shortcut = shell.CreateShortCut( str( broken_path ) )
-    broken_shortcut.TargetPath = str( different_drive_path )
-    broken_shortcut.save()
+    working_dir_lnk_shortcut = shell.CreateShortCut( str( working_dir_lnk_path ) )
+    working_dir_lnk_shortcut.TargetPath = str( target_dir )
+    working_dir_lnk_shortcut.save()
+    shortcuts["working_dir_lnk_shortcut"] = working_dir_lnk_shortcut
 
-    empty_shortcut = shell.CreateShortCut( str( empty_path ) )
-    empty_shortcut.save()
+    working_url_shortcut = shell.CreateShortCut( str( working_url_path ) )
+    working_url_shortcut.TargetPath = "https://stackoverflow.com"
+    working_url_shortcut.save()
+    shortcuts["working_url_shortcut"] = working_url_shortcut
+
+    working_file_url_shortcut = shell.CreateShortCut( str( working_file_url_path ) )
+    working_file_url_shortcut.TargetPath = f"file:///{target_path}"
+    working_file_url_shortcut.save()
+    shortcuts["working_file_url_shortcut"] = working_file_url_shortcut
+
+    working_dir_url_shortcut = shell.CreateShortCut( str( working_dir_url_path ) )
+    working_dir_url_shortcut.TargetPath = f"file:///{target_dir}"
+    working_dir_url_shortcut.save()
+    shortcuts["working_dir_url_shortcut"] = working_dir_url_shortcut
+
+    not_a_file_lnk_shortcut = shell.CreateShortCut( str( not_a_file_lnk_path ) )
+    not_a_file_lnk_shortcut.TargetPath = str( start_dir / "not_a_file" )
+    not_a_file_lnk_shortcut.save()
+    shortcuts["not_a_file_lnk_shortcut"] = not_a_file_lnk_shortcut
+
+    wrong_dir_lnk_shortcut = shell.CreateShortCut( str( wrong_dir_lnk_path ) )
+    wrong_dir_lnk_shortcut.TargetPath = str( start_dir / "wrong_dir" / "target_file" )
+    wrong_dir_lnk_shortcut.save()
+    shortcuts["wrong_dir_lnk_shortcut"] = wrong_dir_lnk_shortcut
+
+    not_a_dir_lnk_shortcut = shell.CreateShortCut( str( not_a_dir_lnk_path ) )
+    not_a_dir_lnk_shortcut.TargetPath = str( start_dir / "not_a_dir" )
+    not_a_dir_lnk_shortcut.save()
+    shortcuts["not_a_dir_lnk_shortcut"] = not_a_dir_lnk_shortcut
+
+    different_drive_lnk_shortcut = shell.CreateShortCut( str( different_drive_lnk_path ) )
+    different_drive_lnk_shortcut.TargetPath = str( different_drive_path )
+    different_drive_lnk_shortcut.save()
+    shortcuts["different_drive_lnk_shortcut"] = different_drive_lnk_shortcut
+
+    not_a_file_url_shortcut = shell.CreateShortCut( str( not_a_file_url_path ) )
+    not_a_file_url_shortcut.TargetPath = str( start_dir / "not_a_file" )
+    not_a_file_url_shortcut.save()
+    shortcuts["not_a_file_url_shortcut"] = not_a_file_url_shortcut
+
+    wrong_dir_url_shortcut = shell.CreateShortCut( str( wrong_dir_url_path ) )
+    wrong_dir_url_shortcut.TargetPath = str( start_dir / "wrong_dir" / "target_file" )
+    wrong_dir_url_shortcut.save()
+    shortcuts["wrong_dir_url_shortcut"] = wrong_dir_url_shortcut
+
+    not_a_dir_url_shortcut = shell.CreateShortCut( str( not_a_dir_url_path ) )
+    not_a_dir_url_shortcut.TargetPath = str( start_dir / "not_a_dir" )
+    not_a_dir_url_shortcut.save()
+    shortcuts["not_a_dir_url_shortcut"] = not_a_dir_url_shortcut
+
+    empty_lnk_shortcut = shell.CreateShortCut( str( empty_lnk_path ) )
+    empty_lnk_shortcut.save()
+    shortcuts["empty_lnk_shortcut"] = empty_lnk_shortcut
+
+    empty_url_shortcut = shell.CreateShortCut( str( empty_url_path ) )
+    empty_url_shortcut.save()
+    shortcuts["empty_url_shortcut"] = empty_url_shortcut
 
     lnk_to_net_shortcut = shell.CreateShortCut( str( lnk_to_net_path ) )
-    lnk_to_net_shortcut.TargetPath = 'https://stackoverflow.com'
+    lnk_to_net_shortcut.TargetPath = "https://stackoverflow.com"
     lnk_to_net_shortcut.save()
+    shortcuts["lnk_to_net_shortcut"] = lnk_to_net_shortcut
 
-    assert is_target_drive_missing( str( working_path ) ) == False
-    assert is_target_drive_missing( working_path ) == False
-    assert is_target_drive_missing( working_shortcut ) == False
+    yield start_dir, shortcuts
 
-    assert is_target_drive_missing( str( broken_path ) ) == True
-    assert is_target_drive_missing( broken_path ) == True
-    assert is_target_drive_missing( broken_shortcut ) == True
+    rmtree( start_dir )
+
+def test_is_target_drive_missing( dir_of_shortcuts ):
+    _, shortcuts = dir_of_shortcuts
+
+    assert is_target_drive_missing( shortcuts["working_file_lnk_shortcut"] ) == False
+    assert is_target_drive_missing( shortcuts["working_dir_lnk_shortcut"] ) == False
+    # Broken paths, but not on a missing drive.
+    assert is_target_drive_missing( shortcuts["not_a_file_lnk_shortcut"] ) == False
+    assert is_target_drive_missing( shortcuts["not_a_file_url_shortcut"] ) == False
+    # Regardless of their target, URL shortcuts aren't targeting a missing drive.
+    assert is_target_drive_missing( shortcuts["working_url_shortcut"] ) == False
+    assert is_target_drive_missing( shortcuts["empty_url_shortcut"] ) == False
+
+    assert is_target_drive_missing( shortcuts["different_drive_lnk_shortcut"] ) == True
+
+    # String and Path path to shortcut should also work.
+    assert is_target_drive_missing( shortcuts["working_file_lnk_shortcut"].FullName ) == False
+    assert is_target_drive_missing( Path( shortcuts["working_file_lnk_shortcut"].FullName ) ) == False
 
     with pytest.raises(ValueError):
         is_target_drive_missing(1)
@@ -109,99 +214,33 @@ def test_is_target_drive_missing( tmp_path ):
         is_target_drive_missing(True)
 
     with pytest.raises(NoTargetPathException):
-        is_target_drive_missing( str( empty_path ) )
-        is_target_drive_missing( empty_path )
-        is_target_drive_missing( empty_shortcut )
-        is_target_drive_missing( str( lnk_to_net_path ) )
-        is_target_drive_missing( lnk_to_net_path )
-        is_target_drive_missing( lnk_to_net_shortcut )
+        is_target_drive_missing( shortcuts["empty_lnk_shortcut"] )
+        is_target_drive_missing( shortcuts["lnk_to_net_shortcut"] )
 
-def test_is_broken_shortcut( tmp_path ):
-    target_path = tmp_path / "target_dir" / "target_file"
-    target_path.parent.mkdir() # Create temporary directory
-    target_path.touch() # Create temporary file
-    working_path1 = tmp_path / "working_shortcut1.lnk"
-    working_path2 = tmp_path / "working_shortcut2.lnk"
-    working_path3 = tmp_path / "working_shortcut3.url"
-    broken_path2 = tmp_path / "broken_shortcut2.lnk"
-    broken_path3 = tmp_path / "broken_shortcut3.url"
-    # broken_path4 = tmp_path / "broken_shortcut4.url"
-    broken_path5 = tmp_path / "broken_shortcut5.lnk"
-    broken_path6 = tmp_path / "broken_shortcut6.lnk"
-    empty_path = tmp_path / "empty_shortcut.lnk"
-    lnk_to_net_path = tmp_path / "lnk_to_net.lnk"
+def test_is_broken_shortcut( dir_of_shortcuts ):
+    _, shortcuts = dir_of_shortcuts
 
-    shell = win32com.client.Dispatch("WScript.Shell")
-    working_shortcut1 = shell.CreateShortCut( str( working_path1 ) )
-    working_shortcut1.TargetPath = str( target_path )
-    working_shortcut1.save()
+    assert is_broken_shortcut( shortcuts["working_file_lnk_shortcut"] ) == False
+    assert is_broken_shortcut( shortcuts["working_dir_lnk_shortcut"] ) == False
+    assert is_broken_shortcut( shortcuts["working_url_shortcut"] ) == False
 
-    working_shortcut2 = shell.CreateShortCut( str( working_path2 ) )
-    working_shortcut2.TargetPath = str( tmp_path / "target_dir" )
-    working_shortcut2.save()
+    assert is_broken_shortcut( shortcuts["working_file_url_shortcut"] ) == False
+    assert is_broken_shortcut( shortcuts["working_dir_url_shortcut"] ) == False
 
-    working_shortcut3 = shell.CreateShortCut( str( working_path3 ) )
-    working_shortcut3.TargetPath = "https://a_valid_url"
-    working_shortcut3.save()
+    assert is_broken_shortcut( shortcuts["not_a_file_lnk_shortcut"] ) == True
+    assert is_broken_shortcut( shortcuts["wrong_dir_lnk_shortcut"] ) == True
+    assert is_broken_shortcut( shortcuts["not_a_dir_lnk_shortcut"] ) == True
+    assert is_broken_shortcut( shortcuts["different_drive_lnk_shortcut"] ) == True
 
-    broken_shortcut2 = shell.CreateShortCut( str( broken_path2 ) )
-    broken_shortcut2.TargetPath = str( tmp_path / "not_a_file" )
-    broken_shortcut2.save()
+    assert is_broken_shortcut( shortcuts["not_a_file_url_shortcut"] ) == True
+    assert is_broken_shortcut( shortcuts["wrong_dir_url_shortcut"] ) == True
+    assert is_broken_shortcut( shortcuts["not_a_dir_url_shortcut"] ) == True
 
-    broken_shortcut3 = shell.CreateShortCut( str( broken_path3 ) )
-    broken_shortcut3.save()
+    assert is_broken_shortcut( shortcuts["empty_url_shortcut"] ) == True
 
-    # TODO: Find an appropriate way to test with a broken URL shortcut.
-    # An error will be raised if you try to assign an invalid URL to a URL
-    # shortcut.
-    # broken_shortcut4 = shell.CreateShortCut( str( broken_path4 ) )
-    # broken_shortcut4.TargetPath = "not_a_valid_url"
-    # broken_shortcut4.save()
-
-    broken_shortcut5 = shell.CreateShortCut( str( broken_path5 ) )
-    broken_shortcut5.TargetPath = str( tmp_path / "wrong_dir" / "target_file" )
-    broken_shortcut5.save()
-
-    broken_shortcut6 = shell.CreateShortCut( str( broken_path6 ) )
-    broken_shortcut6.TargetPath = str( tmp_path / "not_a_dir" )
-    broken_shortcut6.save()
-
-    empty_shortcut = shell.CreateShortCut( str( empty_path ) )
-    empty_shortcut.save()
-
-    lnk_to_net_shortcut = shell.CreateShortCut( str( lnk_to_net_path ) )
-    lnk_to_net_shortcut.TargetPath = 'https://stackoverflow.com'
-    lnk_to_net_shortcut.save()
-
-    assert is_broken_shortcut( str( working_path1 ) ) == False
-    assert is_broken_shortcut( working_path1 ) == False
-    assert is_broken_shortcut( working_shortcut1 ) == False
-
-    assert is_broken_shortcut( str( working_path2 ) ) == False
-    assert is_broken_shortcut( working_path2 ) == False
-    assert is_broken_shortcut( working_shortcut2 ) == False
-
-    assert is_broken_shortcut( str( working_path3 ) ) == False
-    assert is_broken_shortcut( working_path3 ) == False
-    assert is_broken_shortcut( working_shortcut3 ) == False
-
-    assert is_broken_shortcut( str( broken_path2 ) ) == True
-    assert is_broken_shortcut( broken_path2 ) == True
-    assert is_broken_shortcut( broken_shortcut2 ) == True
-
-    assert is_broken_shortcut( str( broken_path3 ) ) == True
-    assert is_broken_shortcut( broken_path3 ) == True
-    assert is_broken_shortcut( broken_shortcut3 ) == True
-
-    # assert is_broken_shortcut( str( broken_path4 ) ) == True
-
-    assert is_broken_shortcut( str( broken_path5 ) ) == True
-    assert is_broken_shortcut( broken_path5 ) == True
-    assert is_broken_shortcut( broken_shortcut5 ) == True
-
-    assert is_broken_shortcut( str( broken_path6 ) ) == True
-    assert is_broken_shortcut( broken_path6 ) == True
-    assert is_broken_shortcut( broken_shortcut6 ) == True
+    # String and Path path to shortcut should also work.
+    assert is_target_drive_missing( shortcuts["working_file_lnk_shortcut"].FullName ) == False
+    assert is_target_drive_missing( Path( shortcuts["working_file_lnk_shortcut"].FullName ) ) == False
 
     with pytest.raises(ValueError):
         is_broken_shortcut(1)
@@ -209,9 +248,5 @@ def test_is_broken_shortcut( tmp_path ):
         is_broken_shortcut(True)
 
     with pytest.raises(NoTargetPathException):
-        is_broken_shortcut( str( empty_path ) )
-        is_broken_shortcut( empty_path )
-        is_broken_shortcut( empty_shortcut )
-        is_broken_shortcut( str( lnk_to_net_path ) )
-        is_broken_shortcut( lnk_to_net_path )
-        is_broken_shortcut( lnk_to_net_shortcut )
+        is_broken_shortcut( shortcuts["empty_lnk_shortcut"] )
+        is_broken_shortcut( shortcuts["lnk_to_net_shortcut"] )
