@@ -74,6 +74,8 @@ def test_is_valid_url( tmp_path ):
 def test_is_target_drive_missing( tmp_path ):
     working_path = tmp_path / "working_shortcut.lnk"
     broken_path = tmp_path / "broken_shortcut.lnk"
+    empty_path = tmp_path / "empty_shortcut.lnk"
+    lnk_to_net_path = tmp_path / "lnk_to_net.lnk"
     # TODO: Come up with a better way to choose a drive that doesn't exist.
     different_drive_path = "A:" / WindowsPath( *tmp_path.parts[1:] )
 
@@ -85,6 +87,13 @@ def test_is_target_drive_missing( tmp_path ):
     broken_shortcut = shell.CreateShortCut( str( broken_path ) )
     broken_shortcut.TargetPath = str( different_drive_path )
     broken_shortcut.save()
+
+    empty_shortcut = shell.CreateShortCut( str( empty_path ) )
+    empty_shortcut.save()
+
+    lnk_to_net_shortcut = shell.CreateShortCut( str( lnk_to_net_path ) )
+    lnk_to_net_shortcut.TargetPath = 'https://stackoverflow.com'
+    lnk_to_net_shortcut.save()
 
     assert is_target_drive_missing( str( working_path ) ) == False
     assert is_target_drive_missing( working_path ) == False
@@ -99,6 +108,14 @@ def test_is_target_drive_missing( tmp_path ):
         is_target_drive_missing(b'1')
         is_target_drive_missing(True)
 
+    with pytest.raises(NoTargetPathException):
+        is_target_drive_missing( str( empty_path ) )
+        is_target_drive_missing( empty_path )
+        is_target_drive_missing( empty_shortcut )
+        is_target_drive_missing( str( lnk_to_net_path ) )
+        is_target_drive_missing( lnk_to_net_path )
+        is_target_drive_missing( lnk_to_net_shortcut )
+
 def test_is_broken_shortcut( tmp_path ):
     target_path = tmp_path / "target_dir" / "target_file"
     target_path.parent.mkdir() # Create temporary directory
@@ -106,12 +123,13 @@ def test_is_broken_shortcut( tmp_path ):
     working_path1 = tmp_path / "working_shortcut1.lnk"
     working_path2 = tmp_path / "working_shortcut2.lnk"
     working_path3 = tmp_path / "working_shortcut3.url"
-    empty_path = tmp_path / "empty_shortcut.lnk"
     broken_path2 = tmp_path / "broken_shortcut2.lnk"
     broken_path3 = tmp_path / "broken_shortcut3.url"
     # broken_path4 = tmp_path / "broken_shortcut4.url"
     broken_path5 = tmp_path / "broken_shortcut5.lnk"
     broken_path6 = tmp_path / "broken_shortcut6.lnk"
+    empty_path = tmp_path / "empty_shortcut.lnk"
+    lnk_to_net_path = tmp_path / "lnk_to_net.lnk"
 
     shell = win32com.client.Dispatch("WScript.Shell")
     working_shortcut1 = shell.CreateShortCut( str( working_path1 ) )
@@ -125,9 +143,6 @@ def test_is_broken_shortcut( tmp_path ):
     working_shortcut3 = shell.CreateShortCut( str( working_path3 ) )
     working_shortcut3.TargetPath = "https://a_valid_url"
     working_shortcut3.save()
-
-    empty_shortcut = shell.CreateShortCut( str( empty_path ) )
-    empty_shortcut.save()
 
     broken_shortcut2 = shell.CreateShortCut( str( broken_path2 ) )
     broken_shortcut2.TargetPath = str( tmp_path / "not_a_file" )
@@ -151,6 +166,13 @@ def test_is_broken_shortcut( tmp_path ):
     broken_shortcut6.TargetPath = str( tmp_path / "not_a_dir" )
     broken_shortcut6.save()
 
+    empty_shortcut = shell.CreateShortCut( str( empty_path ) )
+    empty_shortcut.save()
+
+    lnk_to_net_shortcut = shell.CreateShortCut( str( lnk_to_net_path ) )
+    lnk_to_net_shortcut.TargetPath = 'https://stackoverflow.com'
+    lnk_to_net_shortcut.save()
+
     assert is_broken_shortcut( str( working_path1 ) ) == False
     assert is_broken_shortcut( working_path1 ) == False
     assert is_broken_shortcut( working_shortcut1 ) == False
@@ -162,10 +184,6 @@ def test_is_broken_shortcut( tmp_path ):
     assert is_broken_shortcut( str( working_path3 ) ) == False
     assert is_broken_shortcut( working_path3 ) == False
     assert is_broken_shortcut( working_shortcut3 ) == False
-
-    assert is_broken_shortcut( str( empty_path ) ) == False
-    assert is_broken_shortcut( empty_path ) == False
-    assert is_broken_shortcut( empty_shortcut ) == False
 
     assert is_broken_shortcut( str( broken_path2 ) ) == True
     assert is_broken_shortcut( broken_path2 ) == True
@@ -189,3 +207,11 @@ def test_is_broken_shortcut( tmp_path ):
         is_broken_shortcut(1)
         is_broken_shortcut(b'1')
         is_broken_shortcut(True)
+
+    with pytest.raises(NoTargetPathException):
+        is_broken_shortcut( str( empty_path ) )
+        is_broken_shortcut( empty_path )
+        is_broken_shortcut( empty_shortcut )
+        is_broken_shortcut( str( lnk_to_net_path ) )
+        is_broken_shortcut( lnk_to_net_path )
+        is_broken_shortcut( lnk_to_net_shortcut )
