@@ -2,6 +2,7 @@ from pathlib import WindowsPath
 import pytest
 from shortcutcleaner.shortcutcleaner import *
 from shutil import rmtree
+from unittest.mock import call, patch
 import win32com.client
 
 def parse_drive_str():
@@ -250,3 +251,106 @@ def test_is_broken_shortcut( dir_of_shortcuts ):
     with pytest.raises(NoTargetPathException):
         is_broken_shortcut( shortcuts["empty_lnk_shortcut"] )
         is_broken_shortcut( shortcuts["lnk_to_net_shortcut"] )
+
+@patch('os.path.getsize')
+@patch('time.time')
+@patch('os.remove')
+@patch('builtins.print')
+def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_shortcuts ):
+    starting_dir, shortcuts = dir_of_shortcuts
+
+    # Mock time() and getsize() for consistent output.
+    mock_time.return_value = 1
+    mock_getsize.return_value = 1
+
+    # Assert that print is being called with specific output messages. Since this
+    # is what the user will see, and it changing unexpectedly could be confusing,
+    # it should be verified.
+    start_calls = [
+        call( f"Starting search at {starting_dir}." ),
+        call( f"Treating shortcuts to drives as broken: {[]}." )
+    ]
+
+    broken_shortcut_calls = [
+        call(f"Found broken shortcut at {shortcuts["not_a_file_lnk_shortcut"].FullName}."),
+        call(f"Found broken shortcut at {shortcuts["wrong_dir_lnk_shortcut"].FullName}."),
+        call(f"Found broken shortcut at {shortcuts["not_a_dir_lnk_shortcut"].FullName}."),
+        call(f"Found broken shortcut at {shortcuts["not_a_file_url_shortcut"].FullName}."),
+        call(f"Found broken shortcut at {shortcuts["wrong_dir_url_shortcut"].FullName}."),
+        call(f"Found broken shortcut at {shortcuts["not_a_dir_url_shortcut"].FullName}."),
+    ]
+
+    exception_calls = [
+        call( f"Encountered a CDispatch object with an empty TargetPath at {shortcuts["empty_lnk_shortcut"].FullName}." ),
+        call( f"Encountered a CDispatch object with an empty TargetPath at {shortcuts["lnk_to_net_shortcut"].FullName}." )
+    ]
+
+    end_calls = [
+        call( f"Took {time.time() - time.time()} seconds to run." ),
+        call( f"Found {len(broken_shortcut_calls)} broken shortcuts using {len(broken_shortcut_calls)} total bytes." )
+    ]
+
+    shortcut_path = shortcuts["different_drive_lnk_shortcut"].FullName
+    shortcut_drive, _ = os.path.splitdrive( shortcuts["different_drive_lnk_shortcut"].TargetPath )
+
+    search_loop( starting_dir, clean=False, clean_drives=[] )
+
+    mock_print.assert_has_calls( start_calls, any_order=False )
+    mock_print.assert_has_calls( broken_shortcut_calls, any_order=True )
+    mock_print.assert_has_calls( exception_calls, any_order=True )
+    mock_print.assert_any_call( f"Found shortcut to missing drive {shortcut_drive} at {shortcut_path}." )
+    mock_print.assert_has_calls( end_calls, any_order=False )
+
+    mock_print.reset_mock()
+    search_loop( starting_dir, clean=True, clean_drives=[] )
+
+    clean_start_calls = [
+        call( f"Starting search at {starting_dir}." ),
+        call( "Cleaning broken drives." ),
+        call( f"Treating shortcuts to drives as broken: {[]}." )
+    ]
+
+    # Mock os.remove to verify that search_loop calls it when run with the clean
+    # option without actually deleting any of the test files.
+    remove_calls = [
+        call(shortcuts["not_a_file_lnk_shortcut"].FullName),
+        call(shortcuts["wrong_dir_lnk_shortcut"].FullName),
+        call(shortcuts["not_a_dir_lnk_shortcut"].FullName),
+        call(shortcuts["not_a_file_url_shortcut"].FullName),
+        call(shortcuts["wrong_dir_url_shortcut"].FullName),
+        call(shortcuts["not_a_dir_url_shortcut"].FullName),
+    ]
+
+    mock_print.assert_has_calls( clean_start_calls, any_order=False )
+    mock_print.assert_has_calls( exception_calls, any_order=True )
+    mock_remove.assert_has_calls( remove_calls, any_order=True )
+    mock_print.assert_any_call( f"Found shortcut to missing drive {shortcut_drive} at {shortcut_path}." )
+    mock_print.assert_has_calls( end_calls, any_order=False )
+
+    # Verify that the shortcut that targets a different drive is treated as broken
+    # when the drive is included in clean_drives.
+    mock_print.reset_mock()
+    search_loop( starting_dir, clean=False, clean_drives=[ shortcut_drive ] )
+
+    clean_drives_start_call = [
+        call( f"Starting search at {starting_dir}." ),
+        call( f"Treating shortcuts to drives as broken: {[ shortcut_drive ]}." )
+    ]
+
+    clean_drives_calls = [
+        call( f"Found shortcut to missing drive {shortcut_drive} at {shortcut_path}." ),
+        call( f"Treating as broken because {shortcut_drive} is in clean drives list." ),
+    ]
+
+    clean_drives_broken_calls = broken_shortcut_calls + [ call( f"Found broken shortcut at {shortcut_path}." ) ]
+
+    clean_drives_end_call = [
+        call( f"Took {time.time() - time.time()} seconds to run." ),
+        call( f"Found {len(clean_drives_broken_calls)} broken shortcuts using {len(clean_drives_broken_calls)} total bytes." )
+    ]
+
+    mock_print.assert_has_calls( clean_drives_start_call, any_order=False )
+    mock_print.assert_has_calls( clean_drives_broken_calls, any_order=True )
+    mock_print.assert_has_calls( exception_calls, any_order=True )
+    mock_print.assert_has_calls( clean_drives_calls, any_order=True )
+    mock_print.assert_has_calls( clean_drives_end_call, any_order=False )

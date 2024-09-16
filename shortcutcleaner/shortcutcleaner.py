@@ -250,11 +250,80 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         print(e)
         return False
 
+def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
+    """
+    Search for broken shortcuts in starting directory or subdirectories, and
+    either report or delete them based on user input.
+
+    Arguments:
+        start_dir: The directory to start the search at.
+        clean: Whether or not to delete broken shortcuts that are found.
+        clean_dirves: A list of drive letters. If shortcuts target these missing
+        drives, they will be treated as broken shortcuts.
+    """
+    print( f"Starting search at {start_dir}." )
+    if clean:
+        print( "Cleaning broken drives." )
+    print( f"Treating shortcuts to drives as broken: {clean_drives}." )
+
+    start_time = time.time()
+
+    total_count = 0
+    total_size = 0
+    dirs_to_search = [ start_dir ]
+    while len( dirs_to_search ) > 0:
+        dir_to_search = dirs_to_search.pop(0)
+
+        try:
+            for filename in os.listdir( dir_to_search ):
+                path = os.path.join( dir_to_search, filename )
+                if os.path.isfile( path ):
+                    shortcut = None
+                    try:
+                        shell = client.Dispatch("WScript.Shell")
+                        shortcut = shell.CreateShortCut( path )
+                    except com_error:
+                        # Not a shortcut file.
+                        pass
+                    if shortcut:
+                        broken = False
+                        try:
+                            if is_target_drive_missing( shortcut ):
+                                # Possible the drive is just disconnected, so leave the
+                                # shortcut be.
+                                drive, _ = os.path.splitdrive( shortcut.TargetPath )
+                                print(f"Found shortcut to missing drive {drive} at {path}.")
+                                if drive in clean_drives:
+                                    print(f"Treating as broken because {drive} is in clean drives list.")
+                                    broken = True
+                            else:
+                                broken = is_broken_shortcut( shortcut )
+                        except NoTargetPathException as e:
+                            print( str(e) )
+                            # Since the script can't currently handle this weird
+                            # case, it should report it to the user and not try
+                            # to clean the shortcut.
+                            broken = False
+                            pass
+
+                        if broken:
+                            total_size += os.path.getsize( path )
+                            total_count += 1
+                            if clean:
+                                os.remove( path )
+                            else:
+                                print(f"Found broken shortcut at {path}.")
+                elif os.path.isdir( path ):
+                    dirs_to_search.append( path )
+        except PermissionError as e:
+            print(e)
+
+    print(f"Took {(time.time() - start_time)} seconds to run.")
+    print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
+
 def main():
     """
-    Parse user input, get starting directory, and enter main loop. In main loop,
-    search for broken shortcuts in starting directory or subdirectories, and
-    either report or delete them based on user input.
+    Parse user input, get starting directory, and open GUI.
     """
     parser = argparse.ArgumentParser(
         prog="shortcutcleaner",
@@ -352,71 +421,13 @@ def main():
         drive_frame = RemovableDrive( clean_drive_frame, drive )
         drive_frame.pack()
 
-    ttk.Button( frame, text="Run", command=root.destroy ).grid( column=0, row=8 )
+    def run_search_loop():
+        search_loop( start_dir_var.get(), clean_var.get(), clean_drives )
+        root.destroy()
+
+    ttk.Button( frame, text="Run", command=run_search_loop ).grid( column=0, row=8 )
 
     root.mainloop()
-
-    start_dir = start_dir_var.get()
-    clean = clean_var.get()
-    print( f"Starting search at {start_dir}." )
-    if clean:
-        print( "Cleaning broken drives." )
-    print( f"Treating shortcuts to drives as broken: {clean_drives}." )
-
-    start_time = time.time()
-
-    total_count = 0
-    total_size = 0
-    dirs_to_search = [ start_dir ]
-    while len( dirs_to_search ) > 0:
-        dir_to_search = dirs_to_search.pop(0)
-
-        try:
-            for filename in os.listdir( dir_to_search ):
-                path = os.path.join( dir_to_search, filename )
-                if os.path.isfile( path ):
-                    shortcut = None
-                    try:
-                        shell = client.Dispatch("WScript.Shell")
-                        shortcut = shell.CreateShortCut( path )
-                    except com_error:
-                        # Not a shortcut file.
-                        pass
-                    if shortcut:
-                        broken = False
-                        try:
-                            if is_target_drive_missing( shortcut ):
-                                # Possible the drive is just disconnected, so leave the
-                                # shortcut be.
-                                drive, _ = os.path.splitdrive( shortcut.TargetPath )
-                                print(f"Found shortcut to missing drive {drive} at {path}.")
-                                if drive in clean_drives:
-                                    print(f"Treating as broken because {drive} is in clean drives list.")
-                                    broken = True
-                            else:
-                                broken = is_broken_shortcut( shortcut )
-                        except NoTargetPathException as e:
-                            print( e )
-                            # Since the script can't currently handle this weird
-                            # case, it should report it to the user and not try
-                            # to clean the shortcut.
-                            broken = False
-                            pass
-
-                        if broken:
-                            total_size += os.path.getsize( path )
-                            total_count += 1
-                            if clean:
-                                os.remove( path )
-                            else:
-                                print(f"Found broken shortcut at {path}.")
-                elif os.path.isdir( path ):
-                    dirs_to_search.append( path )
-        except PermissionError as e:
-            print(e)
-
-    print(f"Took {(time.time() - start_time)} seconds to run.")
-    print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
 
 if __name__=="__main__":
     main()
