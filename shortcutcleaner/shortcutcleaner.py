@@ -344,12 +344,24 @@ def main():
         nargs='+',
         default=[]
     )
+    parser.add_argument(
+        '--no_gui',
+        help='''Don't open the Tkinter GUI and immediately run the search.''',
+        action='store_true',
+    )
     args = parser.parse_args()
 
     args.clean_drives = parse_clean_drives( args.clean_drives )
 
     # Start building Tkinter window
     root = tk.Tk()
+
+    if args.no_gui:
+        # Hide the Tkinter root so we only get the file dialog.
+        root.withdraw()
+        start_dir = filedialog.askdirectory()
+        search_loop( start_dir, args.clean, args.clean_drives )
+        return
 
     start_dir_var = tk.StringVar( root, "" )
     clean_var = tk.BooleanVar( root, args.clean )
