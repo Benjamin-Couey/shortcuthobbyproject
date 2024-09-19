@@ -419,7 +419,7 @@ class TkinterGUI(ttk.Frame):
         if len(input) > 1 or not input.isalpha():
             return False
         if parse_drive_str( input ) in self.clean_drives:
-        	return False
+            return False
         return True
 
     def add_clean_drive(self):
@@ -468,8 +468,10 @@ class RemovableDrive(ttk.Frame):
         self.drive = drive
         ttk.Frame.__init__( self, parent, **options )
         self.parent = parent
-        self.label = ttk.Label( self, text=drive ).grid(row=0, column=0)
-        self.button = ttk.Button( self, text="X", command=self.destroy ).grid(row=0, column=1)
+        self.label = ttk.Label( self, text=drive )
+        self.label.grid(row=0, column=0)
+        self.button = ttk.Button( self, text="X", command=self.destroy )
+        self.button.grid(row=0, column=1)
 
 def main():
     """
