@@ -304,7 +304,6 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
                             # case, it should report it to the user and not try
                             # to clean the shortcut.
                             broken = False
-                            pass
 
                         if broken:
                             total_size += os.path.getsize( path )
