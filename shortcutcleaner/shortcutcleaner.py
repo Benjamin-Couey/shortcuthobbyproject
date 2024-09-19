@@ -406,7 +406,7 @@ class TkinterGUI(ttk.Frame):
         start_dir = filedialog.askdirectory()
         self.start_dir_entry.insert(tk.END, start_dir)
 
-    def validate_add_drive( self, input ):
+    def validate_add_drive( self, entry_input ):
         """
         Given an input, returns whether input is a valid drive letter to add.
         Returns true if input is empty, or a single alphabetic character. Returns
@@ -414,11 +414,11 @@ class TkinterGUI(ttk.Frame):
         to a drive letter already in clean_drives.
         Intended to be used as the validatecommand of a TKinter Entry widget.
         """
-        if not input:
+        if not entry_input:
             return True
-        if len(input) > 1 or not input.isalpha():
+        if len(entry_input) > 1 or not entry_input.isalpha():
             return False
-        if parse_drive_str( input ) in self.clean_drives:
+        if parse_drive_str( entry_input ) in self.clean_drives:
             return False
         return True
 
