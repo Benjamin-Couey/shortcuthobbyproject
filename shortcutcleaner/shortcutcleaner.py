@@ -389,8 +389,8 @@ class TkinterGUI(ttk.Frame):
         self.clean_drive_frame.grid( column=0, row=7 )
 
         for drive in clean_drives:
-            drive_frame = RemovableDrive( clean_drive_frame, drive )
-            drive_frame.bind( "<Destroy>", remove_clean_drive )
+            drive_frame = RemovableDrive( self.clean_drive_frame, drive )
+            drive_frame.bind( "<Destroy>", self.remove_clean_drive )
             drive_frame.pack()
 
         # Button for starting search loop.
