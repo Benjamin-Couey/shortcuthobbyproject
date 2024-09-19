@@ -321,6 +321,156 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
     print(f"Took {(time.time() - start_time)} seconds to run.")
     print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
 
+
+class TkinterGUI(ttk.Frame):
+    """
+    Frame which holds the TKinter GUI and manages the data it represents. Stores
+    all child widgets as attributes.
+
+    Attributes:
+        parent: The parent TKinter widget of this TkinterGUI.
+        start_dir_var: The StringVar which holds the path to the starting directory.
+        clean_var: The BooleanVar which holds whether --clean is enabled.
+        clean_drives: The list of string drive letters which holds --clean_drives.
+        add_drive_var: The StringVar which holds the drive letter the user has
+            entered before it is submitted to clean_drives.
+
+    Functions:
+        browse_start_dir
+        add_clean_drive
+        validate_add_drive
+        remove_clean_drive
+        run_search_loop
+    """
+
+    def __init__(self, parent, clean, clean_drives, **options):
+        """
+        Initialize the TkinterGUI's attributes, and then initializes all the
+        widgets that make up the GUI.
+        """
+        ttk.Frame.__init__( self, parent, **options )
+        self.parent = parent
+
+        self.start_dir_var = tk.StringVar( self, "" )
+        self.clean_var = tk.BooleanVar( self, clean )
+        self.clean_drives = clean_drives
+        self.add_drive_var = tk.StringVar( self, "" )
+
+        self.grid()
+
+        # GUI for selecting starting directory.
+        self.start_dir_label = ttk.Label( self, text="Starting directory" )
+        self.start_dir_label.grid( column=0, row=0 )
+        self.start_dir_entry = ttk.Entry( self, textvariable=self.start_dir_var )
+        self.start_dir_entry.grid( column=0, row=1 )
+        self.start_dir_button = ttk.Button( self, text="Select", command=self.browse_start_dir )
+        self.start_dir_button.grid( column=0, row=2 )
+
+        # GUI for toggling clean.
+        self.clean_check = ttk.Checkbutton( self, text="Clean broken shortcuts", variable=self.clean_var )
+        self.clean_check.grid( column=0, row=3 )
+
+        # GUI for selecting drives to treat as broken.
+        self.clean_drives_label = ttk.Label( self, text="Clean drives" )
+        self.clean_drives_label.grid( column=0, row=4 )
+        validate_add_drive_wrapper = (parent.register(self.validate_add_drive), '%P')
+        self.add_drive_entry = ttk.Entry(
+            self,
+            textvariable=self.add_drive_var,
+            validate="key",
+            validatecommand=validate_add_drive_wrapper
+        )
+        self.add_drive_entry.grid( column=0, row=5 )
+
+        self.add_drive_button = ttk.Button( self, text="Add drive", command=self.add_clean_drive )
+        self.add_drive_button.grid( column=0, row=6 )
+
+        self.clean_drive_frame = ttk.Frame( self, padding=10 )
+        self.clean_drive_frame.grid( column=0, row=7 )
+
+        for drive in clean_drives:
+            drive_frame = RemovableDrive( clean_drive_frame, drive )
+            drive_frame.bind( "<Destroy>", remove_clean_drive )
+            drive_frame.pack()
+
+        # Button for starting search loop.
+        self.run_button = ttk.Button( self, text="Run", command=self.run_search_loop )
+        self.run_button.grid( column=0, row=8 )
+
+
+    def browse_start_dir(self):
+        """
+        Opens a filedialog and inserts the result into the start_dir_entry.
+        This will change the value of the start_dir_var.
+        """
+        start_dir = filedialog.askdirectory()
+        self.start_dir_entry.insert(tk.END, start_dir)
+
+    def validate_add_drive( self, input ):
+        """
+        Given an input, returns whether input is a valid drive letter to add.
+        Returns true if input is empty, or a single alphabetic character. Returns
+        false if input is more than one character, non-alphabetic, or corresponds
+        to a drive letter already in clean_drives.
+        Intended to be used as the validatecommand of a TKinter Entry widget.
+        """
+        if not input:
+            return True
+        if len(input) > 1 or not input.isalpha():
+            return False
+        if parse_drive_str( input ) in self.clean_drives:
+        	return False
+        return True
+
+    def add_clean_drive(self):
+        """
+        Gets the value from the add_drive_var. If it isn't empty, parses the entry,
+        adds it to clean_drives, and creates a RemovableDrive frame for the new
+        drive. Always empties add_drive_var.
+        """
+        drive_to_add = self.add_drive_var.get()
+        if drive_to_add:
+            parsed_drive = parse_drive_str( drive_to_add )
+            self.clean_drives.append( parsed_drive )
+            drive_frame = RemovableDrive( self.clean_drive_frame, parsed_drive )
+            drive_frame.bind( "<Destroy>", self.remove_clean_drive )
+            drive_frame.pack()
+        self.add_drive_var.set("")
+
+    def remove_clean_drive( self, event ):
+        """
+        Given a Destroy event, remove from clean_drives the drive of the destroyed
+        widget.
+        Intended to be used as a callback function for when a RemovableDrive frame
+        is destroyed.
+        """
+        self.clean_drives.remove( event.widget.drive )
+
+    def run_search_loop(self):
+        """
+        Run the search_loop then destroys the TkinterGUI's parent to close the GUI.
+        """
+        search_loop( self.start_dir_var.get(), self.clean_var.get(), self.clean_drives )
+        self.parent.destroy()
+
+class RemovableDrive(ttk.Frame):
+    """
+    Frame which represents a drive letter that was added to clean_drives. Includes
+    a button to destroy the frame.
+
+    Attributes:
+        drive: The string drive letter this RemovableDrive represents.
+        parent: The parent TKinter widget of this RemovableDrive.
+        label: The TKinter label which displays the drive letter.
+        button: The TKinter button which destroys teh RemovableDrive frame.
+    """
+    def __init__( self, parent, drive, **options ):
+        self.drive = drive
+        ttk.Frame.__init__( self, parent, **options )
+        self.parent = parent
+        self.label = ttk.Label( self, text=drive ).grid(row=0, column=0)
+        self.button = ttk.Button( self, text="X", command=self.destroy ).grid(row=0, column=1)
+
 def main():
     """
     Parse user input, get starting directory, and open GUI.
@@ -363,83 +513,8 @@ def main():
         search_loop( start_dir, args.clean, args.clean_drives )
         return
 
-    start_dir_var = tk.StringVar( root, "" )
-    clean_var = tk.BooleanVar( root, args.clean )
-    clean_drives = args.clean_drives
-    add_drive_var = tk.StringVar( root, "" )
-
-    frame = ttk.Frame( root, padding=10 )
-    frame.grid()
-
-    ttk.Label( frame, text="Starting directory" ).grid( column=0, row=0 )
-    start_dir_entry = ttk.Entry( frame, textvariable=start_dir_var )
-    start_dir_entry.grid( column=0, row=1 )
-
-    def browse_start_dir():
-        start_dir = filedialog.askdirectory()
-        start_dir_entry.insert(tk.END, start_dir)
-
-    start_dir_button = ttk.Button( frame, text="Select", command=browse_start_dir )
-    start_dir_button.grid( column=0, row=2 )
-
-    ttk.Checkbutton( frame, text="Clean broken shortcuts", variable=clean_var ).grid( column=0, row=3 )
-
-    def validate_add_drive(input):
-        if not input:
-            return True
-        if len(input) > 1 or not input.isalpha():
-            return False
-        return True
-        if parse_drive_str( input ) in clean_drives:
-        	return False
-    validate_add_drive_wrapper = (root.register(validate_add_drive), '%P')
-
-    ttk.Label( frame, text="Clean drives" ).grid( column=0, row=4 )
-    add_drive_entry = ttk.Entry(
-        frame,
-        textvariable=add_drive_var,
-        validate="key",
-        validatecommand=validate_add_drive_wrapper
-    )
-    add_drive_entry.grid( column=0, row=5 )
-
-    def add_clean_drive( clean_drives ):
-        drive_to_add = add_drive_var.get()
-        if drive_to_add:
-            parsed_drive = parse_drive_str( drive_to_add )
-            clean_drives.append( parsed_drive )
-            drive_frame = RemovableDrive( clean_drive_frame, parsed_drive )
-            drive_frame.pack()
-        add_drive_var.set("")
-
-    add_drive_button = ttk.Button( frame, text="Add drive", command=lambda: add_clean_drive(clean_drives) )
-    add_drive_button.grid( column=0, row=6 )
-
-    class RemovableDrive(ttk.Frame):
-        def __init__( self, parent, drive, **options ):
-            self.drive = drive
-            ttk.Frame.__init__( self, parent, **options )
-            ttk.Label( self, text=drive ).grid(row=0, column=0)
-            ttk.Button( self, text="X", command=self.remove ).grid(row=0, column=1)
-
-        def remove( self ):
-            clean_drives.remove( self.drive )
-            self.destroy()
-
-    clean_drive_frame = ttk.Frame( frame, padding=10 )
-    clean_drive_frame.grid( column=0, row=7 )
-
-    for drive in clean_drives:
-        drive_frame = RemovableDrive( clean_drive_frame, drive )
-        drive_frame.pack()
-
-    def run_search_loop():
-        search_loop( start_dir_var.get(), clean_var.get(), clean_drives )
-        root.destroy()
-
-    ttk.Button( frame, text="Run", command=run_search_loop ).grid( column=0, row=8 )
-
-    root.mainloop()
+    gui = TkinterGUI( root, args.clean, args.clean_drives, padding=10 )
+    gui.parent.mainloop()
 
 if __name__=="__main__":
     main()
