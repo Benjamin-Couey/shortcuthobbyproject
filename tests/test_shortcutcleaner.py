@@ -5,14 +5,14 @@ from shutil import rmtree
 from unittest.mock import call, patch
 import win32com.client
 
-def parse_drive_str():
+def test_parse_drive_str():
     assert parse_drive_str( "" ) == None
     assert parse_drive_str( "abc" ) == None
     assert parse_drive_str( ";:" ) == None
     assert parse_drive_str( "c:" ) == "C:"
     assert parse_drive_str( "A" ) == "A:"
 
-def parse_clean_drives():
+def test_parse_clean_drives():
     assert parse_clean_drives( [ "a", "B", "c:", "D:" ] ) == [ "A:", "B:", "C:", "D:" ]
     assert parse_clean_drives( [ "abc", ";:,", "c:", "" ] ) == [ "C:" ]
     assert parse_clean_drives( [] ) == []
