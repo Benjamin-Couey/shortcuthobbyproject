@@ -484,10 +484,9 @@ class TkinterGUI(ttk.Frame):
 
     def run_search_loop(self):
         """
-        Run the search_loop then destroys the TkinterGUI's parent to close the GUI.
+        A wrapper function to run search_loop with values of TkinterGUI's attributes.
         """
         search_loop( self.start_dir_var.get(), self.clean_var.get(), self.clean_drives )
-        self.parent.destroy()
 
 class RemovableDrive(ttk.Frame):
     """
