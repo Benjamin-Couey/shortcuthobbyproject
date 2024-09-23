@@ -62,8 +62,8 @@ def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
     parsed_drives = []
 
     for drive in clean_drives:
-        if len(drive) > 0:
-            alpha_drive = list( filter( str.isalpha, drive ) )
+        alpha_drive = list( filter( str.isalpha, drive ) )
+        if alpha_drive:
             first_letter = alpha_drive.pop(0)
             if len(alpha_drive) > 0:
                 print( f"There are multiple drive letter in the input {drive}. The whole input will be ignored." )
