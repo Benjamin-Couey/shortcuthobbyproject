@@ -15,6 +15,7 @@ option to delete broken shortcuts.
 import argparse
 import os
 from pathlib import Path
+import sys
 import time
 import tkinter as tk
 from tkinter import filedialog
@@ -320,6 +321,28 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
     print(f"Took {(time.time() - start_time)} seconds to run.")
     print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
 
+class TextRedirector(object):
+    """
+    An object which stores a TKinter text area and writes to that area.
+    Intended to be assigned to sys.stdout.
+
+    Attributes:
+        text_area: The TKinter text widget to write to.
+    """
+    def __init__( self, text_area ):
+        self.text_area = text_area
+
+    def write( self, string ):
+    """
+    Given a string, writes it to the text area.
+    """
+        self.text_area.config( state=tk.NORMAL ) # Enable writing.
+        self.text_area.insert( tk.END, string )
+        self.text_area.config( state=tk.DISABLED ) # Disable writing again.
+        self.text_area.update_idletasks() # Call for the text area to be updated.
+
+    def flush(self):
+        pass
 
 class TkinterGUI(ttk.Frame):
     """
@@ -396,6 +419,20 @@ class TkinterGUI(ttk.Frame):
         self.run_button = ttk.Button( self, text="Run", command=self.run_search_loop )
         self.run_button.grid( column=0, row=8 )
 
+        # Text box to display result of search loop.
+        self.text_area = tk.Text( self )
+        self.text_area.grid( column=0, row=9 )
+        self.text_area.config( state=tk.DISABLED )
+        # Store original stdout object so it can be restored later.
+        self.old_stdout = sys.stdout
+        sys.stdout = TextRedirector( self.text_area )
+
+    def destroy(self):
+        """
+        Restores the original stdout object before destroying the TkinterGUI.
+        """
+        sys.stdout = self.old_stdout
+        super(TkinterGUI, self).destroy()
 
     def browse_start_dir(self):
         """
