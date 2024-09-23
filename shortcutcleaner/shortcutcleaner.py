@@ -460,12 +460,12 @@ class TkinterGUI(ttk.Frame):
 
     def add_clean_drive(self):
         """
-        Gets the value from the add_drive_var. If it isn't empty, parses the entry,
-        adds it to clean_drives, and creates a RemovableDrive frame for the new
-        drive. Always empties add_drive_var.
+        Gets the value from the add_drive_var. If it is valid and isn't empty,
+        parses the entry, adds it to clean_drives, and creates a RemovableDrive
+        frame for the new drive. Always empties add_drive_var.
         """
         drive_to_add = self.add_drive_var.get()
-        if drive_to_add:
+        if drive_to_add and self.validate_add_drive( drive_to_add ):
             parsed_drive = parse_drive_str( drive_to_add )
             self.clean_drives.append( parsed_drive )
             drive_frame = RemovableDrive( self.clean_drive_frame, parsed_drive )

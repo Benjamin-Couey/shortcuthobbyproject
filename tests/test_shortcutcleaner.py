@@ -367,9 +367,35 @@ def test_validate_add_drive( tkinter_gui ):
     assert tkinter_gui.validate_add_drive( None ) == True
     assert tkinter_gui.validate_add_drive( "a" ) == True
     assert tkinter_gui.validate_add_drive( "A" ) == True
+    assert tkinter_gui.validate_add_drive( "A:" ) == False
     assert tkinter_gui.validate_add_drive( "aa" ) == False
     assert tkinter_gui.validate_add_drive( "1" ) == False
     assert tkinter_gui.validate_add_drive( ":" ) == False
     # A new drive isn't valid if it's already in clean_drives.
     tkinter_gui.clean_drives.append( parse_drive_str( "A:" ) )
     assert tkinter_gui.validate_add_drive( "A" ) == False
+
+@patch('tkinter.ttk.Frame.bind')
+def test_add_clean_drive( mock_bind, tkinter_gui ):
+    drive_letter = "A"
+    assert not tkinter_gui.clean_drive_frame.winfo_children()
+    tkinter_gui.add_drive_var.set( drive_letter )
+    tkinter_gui.add_clean_drive()
+    assert not tkinter_gui.add_drive_var.get()
+    assert len( tkinter_gui.clean_drive_frame.winfo_children() ) == 1
+    new_removable_drive = tkinter_gui.clean_drive_frame.winfo_children()[0]
+    assert new_removable_drive.drive == parse_drive_str( drive_letter )
+    # Based on this: https://stackoverflow.com/questions/138029/get-bound-event-handler-in-tkinter
+    # there isn't a clean way to get the name of a function bound to a TK widget.
+    # For now, easiest to just mock bind to verify that add_clean_drive is hooking
+    # up the RemovableDrive to remove_clean_drive correctly.
+    mock_bind.assert_called_with( "<Destroy>", tkinter_gui.remove_clean_drive )
+
+    tkinter_gui.add_clean_drive()
+    assert not tkinter_gui.add_drive_var.get()
+    assert len( tkinter_gui.clean_drive_frame.winfo_children() ) == 1
+
+    tkinter_gui.add_drive_var.set( "A:" )
+    tkinter_gui.add_clean_drive()
+    assert not tkinter_gui.add_drive_var.get()
+    assert len( tkinter_gui.clean_drive_frame.winfo_children() ) == 1
