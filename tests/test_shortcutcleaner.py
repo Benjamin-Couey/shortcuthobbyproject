@@ -354,3 +354,22 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
     mock_print.assert_has_calls( exception_calls, any_order=True )
     mock_print.assert_has_calls( clean_drives_calls, any_order=True )
     mock_print.assert_has_calls( clean_drives_end_call, any_order=False )
+
+
+@pytest.fixture
+def tkinter_gui( tmp_path_factory ):
+    root = tk.Tk()
+    gui = TkinterGUI( root, False, [], padding=10 )
+    yield gui
+    root.destroy()
+
+def test_validate_add_drive( tkinter_gui ):
+    assert tkinter_gui.validate_add_drive( None ) == True
+    assert tkinter_gui.validate_add_drive( "a" ) == True
+    assert tkinter_gui.validate_add_drive( "A" ) == True
+    assert tkinter_gui.validate_add_drive( "aa" ) == False
+    assert tkinter_gui.validate_add_drive( "1" ) == False
+    assert tkinter_gui.validate_add_drive( ":" ) == False
+    # A new drive isn't valid if it's already in clean_drives.
+    tkinter_gui.clean_drives.append( parse_drive_str( "A:" ) )
+    assert tkinter_gui.validate_add_drive( "A" ) == False
