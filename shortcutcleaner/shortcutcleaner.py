@@ -333,9 +333,9 @@ class TextRedirector(object):
         self.text_area = text_area
 
     def write( self, string ):
-    """
-    Given a string, writes it to the text area.
-    """
+        """
+        Given a string, writes it to the text area.
+        """
         self.text_area.config( state=tk.NORMAL ) # Enable writing.
         self.text_area.insert( tk.END, string )
         self.text_area.config( state=tk.DISABLED ) # Disable writing again.
