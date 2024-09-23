@@ -484,9 +484,12 @@ class TkinterGUI(ttk.Frame):
 
     def run_search_loop(self):
         """
-        A wrapper function to run search_loop with values of TkinterGUI's attributes.
+        A wrapper function to run search_loop with values of TkinterGUI's attributes
+        and disable the run_button while the loop runs.
         """
+        self.run_button.config( state=tk.DISABLED )
         search_loop( self.start_dir_var.get(), self.clean_var.get(), self.clean_drives )
+        self.run_button.config( state=tk.NORMAL )
 
 class RemovableDrive(ttk.Frame):
     """
