@@ -380,35 +380,39 @@ class TkinterGUI(ttk.Frame):
 
         self.grid()
 
+        self.control_frame = ttk.Frame( self )
+        self.control_frame.grid( column=0, row=0, sticky="NW" )
+
         # GUI for selecting starting directory.
-        self.start_dir_label = ttk.Label( self, text="Starting directory" )
+        self.start_dir_label = ttk.Label( self.control_frame, text="Starting directory" )
         self.start_dir_label.grid( column=0, row=0 )
-        self.start_dir_entry = ttk.Entry( self, textvariable=self.start_dir_var )
-        self.start_dir_entry.grid( column=0, row=1 )
-        self.start_dir_button = ttk.Button( self, text="Select", command=self.browse_start_dir )
-        self.start_dir_button.grid( column=0, row=2 )
+        self.start_dir_button = ttk.Button( self.control_frame, text="Select", command=self.browse_start_dir )
+        self.start_dir_button.grid( column=0, row=1 )
+        self.start_dir_entry = ttk.Entry( self.control_frame, textvariable=self.start_dir_var )
+        self.start_dir_entry.grid( column=1, row=1, columnspan=2 )
 
         # GUI for toggling clean.
-        self.clean_check = ttk.Checkbutton( self, text="Clean broken shortcuts", variable=self.clean_var )
-        self.clean_check.grid( column=0, row=3 )
+        self.clean_check = ttk.Checkbutton( self.control_frame, text="Clean broken shortcuts", variable=self.clean_var )
+        self.clean_check.grid( column=0, row=2 )
 
         # GUI for selecting drives to treat as broken.
-        self.clean_drives_label = ttk.Label( self, text="Clean drives" )
-        self.clean_drives_label.grid( column=0, row=4 )
+        self.clean_drives_label = ttk.Label( self.control_frame, text="Clean drives" )
+        self.clean_drives_label.grid( column=0, row=3 )
+
+        self.add_drive_button = ttk.Button( self.control_frame, text="Add drive", command=self.add_clean_drive )
+        self.add_drive_button.grid( column=0, row=4 )
+
         validate_add_drive_wrapper = (parent.register(self.validate_add_drive), '%P')
         self.add_drive_entry = ttk.Entry(
-            self,
+            self.control_frame,
             textvariable=self.add_drive_var,
             validate="key",
             validatecommand=validate_add_drive_wrapper
         )
-        self.add_drive_entry.grid( column=0, row=5 )
+        self.add_drive_entry.grid( column=1, row=4 )
 
-        self.add_drive_button = ttk.Button( self, text="Add drive", command=self.add_clean_drive )
-        self.add_drive_button.grid( column=0, row=6 )
-
-        self.clean_drive_frame = ttk.Frame( self, padding=10 )
-        self.clean_drive_frame.grid( column=0, row=7 )
+        self.clean_drive_frame = ttk.Frame( self.control_frame )
+        self.clean_drive_frame.grid( column=2, row=3, rowspan=3 )
 
         for drive in clean_drives:
             drive_frame = RemovableDrive( self.clean_drive_frame, drive )
@@ -416,12 +420,12 @@ class TkinterGUI(ttk.Frame):
             drive_frame.pack()
 
         # Button for starting search loop.
-        self.run_button = ttk.Button( self, text="Run", command=self.run_search_loop )
-        self.run_button.grid( column=0, row=8 )
+        self.run_button = ttk.Button( self.control_frame, text="Run", command=self.run_search_loop )
+        self.run_button.grid( column=0, row=5 )
 
         # Text box to display result of search loop.
         self.text_area = tk.Text( self )
-        self.text_area.grid( column=0, row=9 )
+        self.text_area.grid( column=0, row=2 )
         self.text_area.config( state=tk.DISABLED )
         # Store original stdout object so it can be restored later.
         self.old_stdout = sys.stdout
