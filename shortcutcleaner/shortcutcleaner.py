@@ -378,10 +378,10 @@ class TkinterGUI(ttk.Frame):
         self.clean_drives = clean_drives
         self.add_drive_var = tk.StringVar( self, "" )
 
-        self.grid()
+        self.grid( sticky="NESW")
 
         self.control_frame = ttk.Frame( self )
-        self.control_frame.grid( column=0, row=0, sticky="NW" )
+        self.control_frame.grid( column=0, row=0, sticky="NESW" )
 
         # GUI for selecting starting directory.
         self.start_dir_label = ttk.Label( self.control_frame, text="Starting directory" )
@@ -389,7 +389,7 @@ class TkinterGUI(ttk.Frame):
         self.start_dir_button = ttk.Button( self.control_frame, text="Select", command=self.browse_start_dir )
         self.start_dir_button.grid( column=0, row=1 )
         self.start_dir_entry = ttk.Entry( self.control_frame, textvariable=self.start_dir_var )
-        self.start_dir_entry.grid( column=1, row=1, columnspan=2 )
+        self.start_dir_entry.grid( column=1, row=1, columnspan=2, sticky="NESW" )
 
         # GUI for toggling clean.
         self.clean_check = ttk.Checkbutton( self.control_frame, text="Clean broken shortcuts", variable=self.clean_var )
@@ -411,8 +411,8 @@ class TkinterGUI(ttk.Frame):
         )
         self.add_drive_entry.grid( column=1, row=4 )
 
-        self.clean_drive_frame = ttk.Frame( self.control_frame )
-        self.clean_drive_frame.grid( column=2, row=3, rowspan=3 )
+        self.clean_drive_frame = ttk.Frame( self.control_frame, padding=10 )
+        self.clean_drive_frame.grid( column=2, row=3, rowspan=4 )
 
         for drive in clean_drives:
             drive_frame = RemovableDrive( self.clean_drive_frame, drive )
@@ -424,12 +424,26 @@ class TkinterGUI(ttk.Frame):
         self.run_button.grid( column=0, row=5 )
 
         # Text box to display result of search loop.
-        self.text_area = tk.Text( self )
-        self.text_area.grid( column=0, row=2 )
-        self.text_area.config( state=tk.DISABLED )
+        self.text_area = tk.Text( self, state=tk.DISABLED )
+        self.text_area.grid( column=0, row=1, sticky="NESW" )
         # Store original stdout object so it can be restored later.
         self.old_stdout = sys.stdout
         sys.stdout = TextRedirector( self.text_area )
+
+        # Configure grid to expand to fill the full window.
+        self.parent.rowconfigure(0, weight=1)
+        self.parent.columnconfigure (0, weight=1)
+
+        self.rowconfigure(0, weight=1)
+        # Preference expanding the text area vertically.
+        self.rowconfigure(1, weight=3)
+        self.columnconfigure (0, weight=1)
+
+        # Let the starting dir entry expand horizontally.
+        self.control_frame.columnconfigure(2, weight=1)
+        # Let the 6th row of the control frame, which only contains the
+        # clean_drive_frame, expand vertically.
+        self.control_frame.rowconfigure(6, weight=1)
 
     def destroy(self):
         """
