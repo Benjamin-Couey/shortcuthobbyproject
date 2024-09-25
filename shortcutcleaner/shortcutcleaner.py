@@ -465,6 +465,7 @@ class TkinterGUI(ttk.Frame):
         This will change the value of the start_dir_var.
         """
         start_dir = filedialog.askdirectory()
+        self.start_dir_entry.delete(0, tk.END)
         self.start_dir_entry.insert(tk.END, start_dir)
 
     def validate_add_drive( self, entry_input ):
