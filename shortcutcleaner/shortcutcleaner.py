@@ -457,7 +457,7 @@ class TkinterGUI(ttk.Frame):
         Restores the original stdout object before destroying the TkinterGUI.
         """
         sys.stdout = self.old_stdout
-        super(TkinterGUI, self).destroy()
+        super().destroy()
 
     def browse_start_dir(self):
         """
