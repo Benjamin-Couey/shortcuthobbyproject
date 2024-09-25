@@ -321,7 +321,7 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
     print(f"Took {(time.time() - start_time)} seconds to run.")
     print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
 
-class TextRedirector(object):
+class TextRedirector():
     """
     An object which stores a TKinter text area and writes to that area.
     Intended to be assigned to sys.stdout.
