@@ -381,7 +381,7 @@ class TkinterGUI(ttk.Frame):
         self.grid( sticky="NESW")
 
         self.control_frame = ttk.Frame( self )
-        self.control_frame.grid( column=0, row=0, sticky="NESW" )
+        self.control_frame.grid( column=0, row=0, columnspan=2, sticky="NESW" )
 
         # GUI for selecting starting directory.
         self.start_dir_label = ttk.Label( self.control_frame, text="Starting directory" )
@@ -426,6 +426,13 @@ class TkinterGUI(ttk.Frame):
         # Text box to display result of search loop.
         self.text_area = tk.Text( self, state=tk.DISABLED )
         self.text_area.grid( column=0, row=1, sticky="NESW" )
+
+        self.text_scroller = ttk.Scrollbar( self )
+        self.text_scroller.grid( column=1, row=1, sticky="NESW" )
+
+        self.text_scroller.config( command=self.text_area.yview )
+        self.text_area.config( yscrollcommand=self.text_scroller.set )
+
         # Store original stdout object so it can be restored later.
         self.old_stdout = sys.stdout
         sys.stdout = TextRedirector( self.text_area )
