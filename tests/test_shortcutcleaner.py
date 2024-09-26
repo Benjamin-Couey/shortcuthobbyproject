@@ -17,41 +17,41 @@ def test_parse_clean_drives():
     assert parse_clean_drives( [ "abc", ";:,", "c:", "" ] ) == [ "C:" ]
     assert parse_clean_drives( [] ) == []
 
-def test_is_file_shortcut():
+def test_shortcut_has_ext_file_shortcut_ext():
     file_path = WindowsPath() / "testfile.lnk"
     url_path = WindowsPath() / "testfile.url"
     shell = win32com.client.Dispatch("WScript.Shell")
     file_shortcut = shell.CreateShortCut( str( file_path ) )
     url_shortcut = shell.CreateShortCut( str( url_path ) )
-    assert is_file_shortcut(str(file_path)) == True
-    assert is_file_shortcut(str(url_path)) == False
-    assert is_file_shortcut(file_path) == True
-    assert is_file_shortcut(url_path) == False
-    assert is_file_shortcut(file_shortcut) == True
-    assert is_file_shortcut(url_shortcut) == False
-    assert is_file_shortcut("testfile.txt") == False
+    assert shortcut_has_ext(str(file_path), FILE_SHORTCUT_EXT) == True
+    assert shortcut_has_ext(str(url_path), FILE_SHORTCUT_EXT) == False
+    assert shortcut_has_ext(file_path, FILE_SHORTCUT_EXT) == True
+    assert shortcut_has_ext(url_path, FILE_SHORTCUT_EXT) == False
+    assert shortcut_has_ext(file_shortcut, FILE_SHORTCUT_EXT) == True
+    assert shortcut_has_ext(url_shortcut, FILE_SHORTCUT_EXT) == False
+    assert shortcut_has_ext("testfile.txt", FILE_SHORTCUT_EXT) == False
     with pytest.raises(ValueError):
-        is_file_shortcut(1)
-        is_file_shortcut(b'1')
-        is_file_shortcut(True)
+        shortcut_has_ext(1, FILE_SHORTCUT_EXT)
+        shortcut_has_ext(b'1', FILE_SHORTCUT_EXT)
+        shortcut_has_ext(True, FILE_SHORTCUT_EXT)
 
-def test_is_net_shortcut():
+def test_shortcut_has_ext_net_shortcut_ext():
     file_path = WindowsPath() / "testfile.lnk"
     url_path = WindowsPath() / "testfile.url"
     shell = win32com.client.Dispatch("WScript.Shell")
     file_shortcut = shell.CreateShortCut( str( file_path ) )
     url_shortcut = shell.CreateShortCut( str( url_path ) )
-    assert is_net_shortcut(str(file_path)) == False
-    assert is_net_shortcut(str(url_path)) == True
-    assert is_net_shortcut(file_path) == False
-    assert is_net_shortcut(url_path) == True
-    assert is_net_shortcut(file_shortcut) == False
-    assert is_net_shortcut(url_shortcut) == True
-    assert is_net_shortcut("testfile.txt") == False
+    assert shortcut_has_ext(str(file_path), NET_SHORTCUT_EXT) == False
+    assert shortcut_has_ext(str(url_path), NET_SHORTCUT_EXT) == True
+    assert shortcut_has_ext(file_path, NET_SHORTCUT_EXT) == False
+    assert shortcut_has_ext(url_path, NET_SHORTCUT_EXT) == True
+    assert shortcut_has_ext(file_shortcut, NET_SHORTCUT_EXT) == False
+    assert shortcut_has_ext(url_shortcut, NET_SHORTCUT_EXT) == True
+    assert shortcut_has_ext("testfile.txt", NET_SHORTCUT_EXT) == False
     with pytest.raises(ValueError):
-        is_net_shortcut(1)
-        is_net_shortcut(b'1')
-        is_net_shortcut(True)
+        shortcut_has_ext(1, NET_SHORTCUT_EXT)
+        shortcut_has_ext(b'1', NET_SHORTCUT_EXT)
+        shortcut_has_ext(True, NET_SHORTCUT_EXT)
 
 def test_is_valid_url( tmp_path ):
     assert is_valid_url('http://www.cwi.nl:80/%7Eguido/Python.html') == True

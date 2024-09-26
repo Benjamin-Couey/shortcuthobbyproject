@@ -74,51 +74,23 @@ def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
 
     return parsed_drives
 
-def is_file_shortcut( shortcut: Shortcut ) -> bool:
+def shortcut_has_ext( shortcut: Shortcut, ext: str ) -> bool:
     """
-    Given a string, Path, or CDispatch object, return whether shortcut is a .lnk
-    file shortcut.
+    Given a string, Path, or CDispatch object, return whether shortcut has the
+    extension ext.
 
     Exceptions:
+        Raises AttributeError is shortcut is a CDispatch object without a FullName.
         Raises ValueError if shortcut is not a string, Path, or CDispatch object.
     """
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
-        return extension == FILE_SHORTCUT_EXT
+        return extension == ext
     if issubclass( type(shortcut), Path ):
-        return shortcut.suffix == FILE_SHORTCUT_EXT
+        return shortcut.suffix == ext
     if isinstance( shortcut, CDispatch ):
-        try:
-            _, extension = os.path.splitext( shortcut.FullName )
-            # Since URL shortcuts do not have the RelativePath attribute, an
-            # alternative way to check if a COMObject shortcut is a file short
-            # cut would be to check for the presence of that attribute.
-            # return hasattr( shortcut, 'RelativePath' )
-            return extension == FILE_SHORTCUT_EXT
-        except AttributeError:
-            return False
-    else:
-        raise ValueError("Not a string, Path, or CDispatch shortcut.")
-
-def is_net_shortcut( shortcut: Shortcut ) -> bool:
-    """
-    Given a string, Path, or CDispatch object, return whether shortcut is a .url
-    net shortcut.
-
-    Exceptions:
-        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
-    """
-    if isinstance( shortcut, str ):
-        _, extension = os.path.splitext( shortcut )
-        return extension == NET_SHORTCUT_EXT
-    if issubclass( type(shortcut), Path ):
-        return shortcut.suffix == NET_SHORTCUT_EXT
-    if isinstance( shortcut, CDispatch ):
-        try:
-            _, extension = os.path.splitext( shortcut.FullName )
-            return extension == NET_SHORTCUT_EXT
-        except AttributeError:
-            return False
+        _, extension = os.path.splitext( shortcut.FullName )
+        return extension == ext
     else:
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
@@ -183,7 +155,7 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
         return False
 
     try:
-        if is_file_shortcut( shortcut ):
+        if shortcut_has_ext( shortcut, FILE_SHORTCUT_EXT ):
             if not shortcut.TargetPath:
                 # It is possible for .lnk files to have a TargetPath that points
                 # to a URL or a program like Control Panel not in the file system
@@ -200,7 +172,7 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
                     shortcut.FullName
                 )
             return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
-        if is_net_shortcut( shortcut ):
+        if shortcut_has_ext( shortcut, NET_SHORTCUT_EXT ):
             return not is_valid_url( shortcut.TargetPath )
         print("Encountered a CDispatch object that is not a recognized shortcut type.")
         return False
@@ -228,7 +200,7 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         return False
 
     try:
-        if is_file_shortcut( shortcut ):
+        if shortcut_has_ext( shortcut, FILE_SHORTCUT_EXT ):
             if not shortcut.TargetPath:
                 # It is possible for .lnk files to have a TargetPath that points
                 # to a URL or a program like Control Panel not in the file system
@@ -244,7 +216,7 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
                 )
             drive, _ = os.path.splitdrive( shortcut.TargetPath )
             return not os.path.exists( drive )
-        if is_net_shortcut( shortcut ):
+        if shortcut_has_ext( shortcut, NET_SHORTCUT_EXT ):
             return False
         print("Encountered a CDispatch object that is not a recognized shortcut type.")
         return False
