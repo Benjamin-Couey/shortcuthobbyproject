@@ -140,6 +140,29 @@ def is_valid_url( url: str ) -> bool:
         return bool( result.scheme and result.netloc )
     raise ValueError("Not a string.")
 
+
+def get_shortcut_object( shortcut: Shortcut ) -> CDispatch:
+    """
+    Given a string, Path, or CDispatch object, return a CDispatch object.
+
+    Exceptions:
+        Raises com_error if shortcut is not a str or Path that points to a
+        shortcut file.
+        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
+    """
+    if isinstance( shortcut, str ):
+        shell = client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut( shortcut )
+    elif issubclass( type(shortcut), Path ):
+        shell = client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut( str( shortcut ) )
+    elif isinstance( shortcut, CDispatch ):
+        pass
+    else:
+        raise ValueError("Not a string, Path, or CDispatch shortcut.")
+
+    return shortcut
+
 def is_broken_shortcut( shortcut: Shortcut ) -> bool:
     """
     Given a string, Path, or CDispatch object, return whether shortcut is a
@@ -147,22 +170,11 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
     URL.
 
     Exceptions:
-        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
         Raises NoTargetPathException if shortcut is a file shortcut without a
         target path.
     """
-    # Convert to a shortcut object if necessary.
     try:
-        if isinstance( shortcut, str ):
-            shell = client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut( shortcut )
-        elif issubclass( type(shortcut), Path ):
-            shell = client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut( str( shortcut ) )
-        elif isinstance( shortcut, CDispatch ):
-            pass
-        else:
-            raise ValueError("Not a string, Path, or CDispatch shortcut.")
+        shortcut = get_shortcut_object( shortcut )
     except com_error as e:
         # Will be raised by CreateShortCut() if shortcut is a str or Path that
         # does not point to a shortcut file, in which case it can't be a broken
@@ -203,22 +215,11 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
     a file on a drive that is not currently connected.
 
     Exceptions:
-        Raises ValueError if shortcut is not a string, Path, or CDispatch object.
         Raises NoTargetPathException if shortcut is a file shortcut without a
         target path.
     """
-    # Convert to a shortcut object if necessary.
     try:
-        if isinstance( shortcut, str ):
-            shell = client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut( shortcut )
-        elif issubclass( type(shortcut), Path ):
-            shell = client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut( str( shortcut ) )
-        elif isinstance( shortcut, CDispatch ):
-            pass
-        else:
-            raise ValueError("Not a string, Path, or CDispatch shortcut.")
+        shortcut = get_shortcut_object( shortcut )
     except com_error as e:
         # Will be raised by CreateShortCut() if shortcut is a str or Path that
         # does not point to a shortcut file, in which case it can't be a broken

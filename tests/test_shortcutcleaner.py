@@ -191,6 +191,26 @@ def dir_of_shortcuts( tmp_path_factory ):
 
     rmtree( start_dir )
 
+def test_get_shortcut_object( dir_of_shortcuts ):
+    _, shortcuts = dir_of_shortcuts
+    assert get_shortcut_object( shortcuts["working_file_lnk_shortcut"] ) == shortcuts["working_file_lnk_shortcut"]
+    # TODO: Write function to compare CDispatch objects.
+    shortcut_from_strpath = get_shortcut_object( shortcuts["working_file_lnk_shortcut"].FullName )
+    assert isinstance( shortcut_from_strpath, CDispatch )
+    assert shortcut_from_strpath.TargetPath == shortcuts["working_file_lnk_shortcut"].TargetPath
+
+    shortcut_from_path = get_shortcut_object( Path( shortcuts["working_file_lnk_shortcut"].FullName ) )
+    assert isinstance( shortcut_from_path, CDispatch )
+    assert shortcut_from_path.TargetPath == shortcuts["working_file_lnk_shortcut"].TargetPath
+
+    with pytest.raises(com_error):
+        get_shortcut_object( shortcuts["working_file_lnk_shortcut"].TargetPath )
+
+    with pytest.raises(ValueError):
+        get_shortcut_object(1)
+        get_shortcut_object(b'1')
+        get_shortcut_object(True)
+
 def test_is_target_drive_missing( dir_of_shortcuts ):
     _, shortcuts = dir_of_shortcuts
 
