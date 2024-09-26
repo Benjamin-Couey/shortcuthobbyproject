@@ -38,7 +38,19 @@ class NoTargetPathException(Exception):
         message: The error message.
         path: Path to the shortcut file which caused the exception.
     """
+    def __init__(self, message, path):
+        super().__init__(message)
+        self.path = path
 
+class UnfamiliarShortcutExtException(Exception):
+    """
+    Exception for when a CDispatch object returned by shell.CreateShortCut does
+    not have a file extension of .lnk or .url.
+
+    Attributes:
+        message: The error message.
+        path: Path to the shortcut file which caused the exception.
+    """
     def __init__(self, message, path):
         super().__init__(message)
         self.path = path
@@ -148,6 +160,8 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
         shortcut file.
         Raises NoTargetPathException if shortcut is a file shortcut with an empty
         target path.
+        Raises UnfamiliarShortcutExtException if shortcut does not have recognized
+        extension.
     """
     shortcut = get_shortcut_object( shortcut )
     if shortcut_has_ext( shortcut, FILE_SHORTCUT_EXT ):
@@ -169,8 +183,10 @@ def is_broken_shortcut( shortcut: Shortcut ) -> bool:
         return not ( os.path.isfile( shortcut.TargetPath ) or os.path.isdir( shortcut.TargetPath ) )
     if shortcut_has_ext( shortcut, NET_SHORTCUT_EXT ):
         return not is_valid_url( shortcut.TargetPath )
-    print("Encountered a CDispatch object that is not a recognized shortcut type.")
-    return False
+    raise UnfamiliarShortcutExtException(
+        f"Encountered a CDispatch object that is not a recognized shortcut extension at {shortcut.FullName}.",
+        shortcut.FullName
+    )
 
 def is_target_drive_missing( shortcut: Shortcut ) -> bool:
     """
@@ -184,6 +200,8 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         shortcut file.
         Raises NoTargetPathException if shortcut is a file shortcut without a
         target path.
+        Raises UnfamiliarShortcutExtException if shortcut does not have recognized
+        extension.
     """
     shortcut = get_shortcut_object( shortcut )
     if shortcut_has_ext( shortcut, FILE_SHORTCUT_EXT ):
@@ -204,8 +222,10 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         return not os.path.exists( drive )
     if shortcut_has_ext( shortcut, NET_SHORTCUT_EXT ):
         return False
-    print("Encountered a CDispatch object that is not a recognized shortcut type.")
-    return False
+    raise UnfamiliarShortcutExtException(
+        f"Encountered a CDispatch object that is not a recognized shortcut extension at {shortcut.FullName}.",
+        shortcut.FullName
+    )
 
 def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
     """
@@ -248,13 +268,18 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
                                 broken = True
                         else:
                             broken = is_broken_shortcut( path )
-                    # The shortcut was missing some important data, so
-                    # the script should report it to the user and not
-                    # try to clean
-                    # Since the script can't currently handle this weird
-                    # case, it should report it to the user and not try
-                    # to clean the shortcut.
-                    except (AttributeError, com_error, NoTargetPathException) as e:
+                    # Common case of path not being a shortcut file, so don't need
+                    # to report anything.
+                    except com_error:
+                        pass
+                    # AttributeError: the shortcut was missing some important data.
+                    # NoTargetPathException: a weird case the script can't handle.
+                    # UnfamiliarShortcutExtException: unfamiliar type of shortcut.
+                    # In all these cases, the script should report to the user and
+                    # not clean the shortcut.
+                    except AttributeError as e:
+                        print( f"Encountered {e} while processing file at {path}" )
+                    except ( NoTargetPathException, UnfamiliarShortcutExtException ) as e:
                         print( str(e) )
                         broken = False
                     if broken:

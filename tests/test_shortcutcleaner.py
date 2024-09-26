@@ -103,6 +103,8 @@ def dir_of_shortcuts( tmp_path_factory ):
     # TODO: Find an appropriate way to test with a broken URL shortcut.
     # An error will be raised if you try to assign an invalid URL to a URL
     # shortcut.
+    # TODO: Find an appropriate way to test with a shortcut that doesn't have
+    # a .lnk or .url extension.
     shortcuts = {}
     not_a_file_url_path = start_dir / "not_a_file_url_shortcut.url"
     wrong_dir_url_path = start_dir / "wrong_dir_url_shortcut.url"
