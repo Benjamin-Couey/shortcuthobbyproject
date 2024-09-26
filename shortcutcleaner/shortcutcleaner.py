@@ -97,12 +97,12 @@ def shortcut_has_ext( shortcut: Shortcut, ext: str ) -> bool:
     """
     if isinstance( shortcut, str ):
         _, extension = os.path.splitext( shortcut )
-        return extension == ext
+        return extension.lower() == ext
     if issubclass( type(shortcut), Path ):
-        return shortcut.suffix == ext
+        return shortcut.suffix.lower() == ext
     if isinstance( shortcut, CDispatch ):
         _, extension = os.path.splitext( shortcut.FullName )
-        return extension == ext
+        return extension.lower() == ext
     else:
         raise ValueError("Not a string, Path, or CDispatch shortcut.")
 

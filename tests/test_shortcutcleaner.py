@@ -20,9 +20,13 @@ def test_parse_clean_drives():
 def test_shortcut_has_ext_file_shortcut_ext():
     file_path = WindowsPath() / "testfile.lnk"
     url_path = WindowsPath() / "testfile.url"
+    upper_case_path = WindowsPath() / "testfile.LNK"
+    weird_case_path = WindowsPath() / "testfile.LnK"
     shell = win32com.client.Dispatch("WScript.Shell")
     file_shortcut = shell.CreateShortCut( str( file_path ) )
     url_shortcut = shell.CreateShortCut( str( url_path ) )
+    upper_case_shortcut = shell.CreateShortCut( str( upper_case_path ) )
+    weird_case_shortcut = shell.CreateShortCut( str( weird_case_path ) )
     assert shortcut_has_ext(str(file_path), FILE_SHORTCUT_EXT) == True
     assert shortcut_has_ext(str(url_path), FILE_SHORTCUT_EXT) == False
     assert shortcut_has_ext(file_path, FILE_SHORTCUT_EXT) == True
@@ -30,6 +34,8 @@ def test_shortcut_has_ext_file_shortcut_ext():
     assert shortcut_has_ext(file_shortcut, FILE_SHORTCUT_EXT) == True
     assert shortcut_has_ext(url_shortcut, FILE_SHORTCUT_EXT) == False
     assert shortcut_has_ext("testfile.txt", FILE_SHORTCUT_EXT) == False
+    assert shortcut_has_ext(upper_case_shortcut, FILE_SHORTCUT_EXT) == True
+    assert shortcut_has_ext(weird_case_shortcut, FILE_SHORTCUT_EXT) == True
     with pytest.raises(ValueError):
         shortcut_has_ext(1, FILE_SHORTCUT_EXT)
         shortcut_has_ext(b'1', FILE_SHORTCUT_EXT)
