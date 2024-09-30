@@ -1,5 +1,5 @@
 """
-Script to search for and clean broken Windows shortcut files.
+Script to search for and optionally delete broken Windows shortcut files.
 
 The script will ask you to select a starting directory, and then search that
 directory and its subdirectories for broken shortcuts. A shortcut is considered
@@ -9,7 +9,7 @@ broken if it:
     Targets a file or directory on a detached drive specified in the --clean_drives
     option.
 
-By default, the script will only report broken shortcuts. Run it with the --clean
+By default, the script will only report broken shortcuts. Run it with the --delete
 option to delete broken shortcuts.
 """
 import argparse
@@ -227,20 +227,20 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         shortcut.FullName
     )
 
-def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
+def search_loop( start_dir: str, delete: bool, clean_drives: list[str] ):
     """
     Search for broken shortcuts in starting directory or subdirectories, and
     either report or delete them based on user input.
 
     Arguments:
         start_dir: The directory to start the search at.
-        clean: Whether or not to delete broken shortcuts that are found.
+        delete: Whether or not to delete broken shortcuts that are found.
         clean_dirves: A list of drive letters. If shortcuts target these missing
         drives, they will be treated as broken shortcuts.
     """
     print( f"Starting search at {start_dir}." )
-    if clean:
-        print( "Cleaning broken drives." )
+    if delete:
+        print( "Deleting broken drives." )
     print( f"Treating shortcuts to drives as broken: {clean_drives}." )
 
     start_time = time.time()
@@ -276,7 +276,7 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
                     # NoTargetPathException: a weird case the script can't handle.
                     # UnfamiliarShortcutExtException: unfamiliar type of shortcut.
                     # In all these cases, the script should report to the user and
-                    # not clean the shortcut.
+                    # not delete the shortcut.
                     except AttributeError as e:
                         print( f"Encountered {e} while processing file at {path}" )
                     except ( NoTargetPathException, UnfamiliarShortcutExtException ) as e:
@@ -285,7 +285,7 @@ def search_loop( start_dir: str, clean: bool, clean_drives: list[str] ):
                     if broken:
                         total_size += os.path.getsize( path )
                         total_count += 1
-                        if clean:
+                        if delete:
                             os.remove( path )
                         else:
                             print(f"Found broken shortcut at {path}.")
@@ -328,7 +328,7 @@ class TkinterGUI(ttk.Frame):
     Attributes:
         parent: The parent TKinter widget of this TkinterGUI.
         start_dir_var: The StringVar which holds the path to the starting directory.
-        clean_var: The BooleanVar which holds whether --clean is enabled.
+        delete_var: The BooleanVar which holds whether --delete is enabled.
         clean_drives: The list of string drive letters which holds --clean_drives.
         add_drive_var: The StringVar which holds the drive letter the user has
             entered before it is submitted to clean_drives.
@@ -341,7 +341,7 @@ class TkinterGUI(ttk.Frame):
         run_search_loop
     """
 
-    def __init__(self, parent, clean, clean_drives, **options):
+    def __init__(self, parent, delete, clean_drives, **options):
         """
         Initialize the TkinterGUI's attributes, and then initializes all the
         widgets that make up the GUI.
@@ -350,7 +350,7 @@ class TkinterGUI(ttk.Frame):
         self.parent = parent
 
         self.start_dir_var = tk.StringVar( self, "" )
-        self.clean_var = tk.BooleanVar( self, clean )
+        self.delete_var = tk.BooleanVar( self, delete )
         self.clean_drives = clean_drives
         self.add_drive_var = tk.StringVar( self, "" )
 
@@ -367,9 +367,9 @@ class TkinterGUI(ttk.Frame):
         self.start_dir_entry = ttk.Entry( self.control_frame, textvariable=self.start_dir_var )
         self.start_dir_entry.grid( column=1, row=1, columnspan=2, sticky="NESW" )
 
-        # GUI for toggling clean.
-        self.clean_check = ttk.Checkbutton( self.control_frame, text="Clean broken shortcuts", variable=self.clean_var )
-        self.clean_check.grid( column=0, row=2 )
+        # GUI for toggling delete.
+        self.delete_check = ttk.Checkbutton( self.control_frame, text="Delete broken shortcuts", variable=self.delete_var )
+        self.delete_check.grid( column=0, row=2 )
 
         # GUI for selecting drives to treat as broken.
         self.clean_drives_label = ttk.Label( self.control_frame, text="Clean drives" )
@@ -490,7 +490,7 @@ class TkinterGUI(ttk.Frame):
         and disable the run_button while the loop runs.
         """
         self.run_button.config( state=tk.DISABLED )
-        search_loop( self.start_dir_var.get(), self.clean_var.get(), self.clean_drives )
+        search_loop( self.start_dir_var.get(), self.delete_var.get(), self.clean_drives )
         self.run_button.config( state=tk.NORMAL )
 
 class RemovableDrive(ttk.Frame):
@@ -523,7 +523,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter # Preserve docstring formatting
     )
     parser.add_argument(
-        '--clean',
+        '--delete',
         help='Delete broken shortcuts that are found (default: report broken shortcuts).',
         action='store_true',
     )
@@ -552,10 +552,10 @@ def main():
         # Hide the Tkinter root so we only get the file dialog.
         root.withdraw()
         start_dir = filedialog.askdirectory()
-        search_loop( start_dir, args.clean, args.clean_drives )
+        search_loop( start_dir, args.delete, args.clean_drives )
         return
 
-    gui = TkinterGUI( root, args.clean, args.clean_drives, padding=10 )
+    gui = TkinterGUI( root, args.delete, args.clean_drives, padding=10 )
     gui.parent.mainloop()
 
 if __name__=="__main__":

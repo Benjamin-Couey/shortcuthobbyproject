@@ -321,7 +321,7 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
     shortcut_path = shortcuts["different_drive_lnk_shortcut"].FullName
     shortcut_drive, _ = os.path.splitdrive( shortcuts["different_drive_lnk_shortcut"].TargetPath )
 
-    search_loop( starting_dir, clean=False, clean_drives=[] )
+    search_loop( starting_dir, delete=False, clean_drives=[] )
 
     mock_print.assert_has_calls( start_calls, any_order=False )
     mock_print.assert_has_calls( broken_shortcut_calls, any_order=True )
@@ -330,11 +330,11 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
     mock_print.assert_has_calls( end_calls, any_order=False )
 
     mock_print.reset_mock()
-    search_loop( starting_dir, clean=True, clean_drives=[] )
+    search_loop( starting_dir, delete=True, clean_drives=[] )
 
     clean_start_calls = [
         call( f"Starting search at {starting_dir}." ),
-        call( "Cleaning broken drives." ),
+        call( "Deleting broken drives." ),
         call( f"Treating shortcuts to drives as broken: {[]}." )
     ]
 
@@ -358,7 +358,7 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
     # Verify that the shortcut that targets a different drive is treated as broken
     # when the drive is included in clean_drives.
     mock_print.reset_mock()
-    search_loop( starting_dir, clean=False, clean_drives=[ shortcut_drive ] )
+    search_loop( starting_dir, delete=False, clean_drives=[ shortcut_drive ] )
 
     clean_drives_start_call = [
         call( f"Starting search at {starting_dir}." ),
