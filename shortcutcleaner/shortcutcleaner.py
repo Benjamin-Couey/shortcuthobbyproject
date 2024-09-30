@@ -103,8 +103,7 @@ def shortcut_has_ext( shortcut: Shortcut, ext: str ) -> bool:
     if isinstance( shortcut, CDispatch ):
         _, extension = os.path.splitext( shortcut.FullName )
         return extension.lower() == ext
-    else:
-        raise ValueError("Not a string, Path, or CDispatch shortcut.")
+    raise ValueError("Not a string, Path, or CDispatch shortcut.")
 
 def is_valid_url( url: str ) -> bool:
     """
