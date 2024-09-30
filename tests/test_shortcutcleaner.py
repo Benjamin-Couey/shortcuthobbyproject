@@ -12,10 +12,10 @@ def test_parse_drive_str():
     assert parse_drive_str( "c:" ) == "C:"
     assert parse_drive_str( "A" ) == "A:"
 
-def test_parse_clean_drives():
-    assert parse_clean_drives( [ "a", "B", "c:", "D:" ] ) == [ "A:", "B:", "C:", "D:" ]
-    assert parse_clean_drives( [ "abc", ";:,", "c:", "" ] ) == [ "C:" ]
-    assert parse_clean_drives( [] ) == []
+def test_parse_removable_drives():
+    assert parse_removable_drives( [ "a", "B", "c:", "D:" ] ) == [ "A:", "B:", "C:", "D:" ]
+    assert parse_removable_drives( [ "abc", ";:,", "c:", "" ] ) == [ "C:" ]
+    assert parse_removable_drives( [] ) == []
 
 def test_shortcut_has_ext_file_shortcut_ext():
     file_path = WindowsPath() / "testfile.lnk"
@@ -296,8 +296,11 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
     # it should be verified.
     start_calls = [
         call( f"Starting search at {starting_dir}." ),
-        call( f"Treating shortcuts to drives as broken: {[]}." )
+        call( f"Ignoring broken shortcuts to these missing drives: {[]}." )
     ]
+
+    shortcut_path = shortcuts["different_drive_lnk_shortcut"].FullName
+    shortcut_drive, _ = os.path.splitdrive( shortcuts["different_drive_lnk_shortcut"].TargetPath )
 
     broken_shortcut_calls = [
         call(f"Found broken shortcut at {shortcuts["not_a_file_lnk_shortcut"].FullName}."),
@@ -306,6 +309,7 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
         call(f"Found broken shortcut at {shortcuts["not_a_file_url_shortcut"].FullName}."),
         call(f"Found broken shortcut at {shortcuts["wrong_dir_url_shortcut"].FullName}."),
         call(f"Found broken shortcut at {shortcuts["not_a_dir_url_shortcut"].FullName}."),
+        call(f"Found broken shortcut to missing drive {shortcut_drive} at {shortcut_path}."),
     ]
 
     exception_calls = [
@@ -318,24 +322,20 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
         call( f"Found {len(broken_shortcut_calls)} broken shortcuts using {len(broken_shortcut_calls)} total bytes." )
     ]
 
-    shortcut_path = shortcuts["different_drive_lnk_shortcut"].FullName
-    shortcut_drive, _ = os.path.splitdrive( shortcuts["different_drive_lnk_shortcut"].TargetPath )
-
-    search_loop( starting_dir, delete=False, clean_drives=[] )
+    search_loop( starting_dir, delete=False, removable_drives=[] )
 
     mock_print.assert_has_calls( start_calls, any_order=False )
     mock_print.assert_has_calls( broken_shortcut_calls, any_order=True )
     mock_print.assert_has_calls( exception_calls, any_order=True )
-    mock_print.assert_any_call( f"Found shortcut to missing drive {shortcut_drive} at {shortcut_path}." )
     mock_print.assert_has_calls( end_calls, any_order=False )
 
     mock_print.reset_mock()
-    search_loop( starting_dir, delete=True, clean_drives=[] )
+    search_loop( starting_dir, delete=True, removable_drives=[] )
 
-    clean_start_calls = [
+    delete_start_calls = [
         call( f"Starting search at {starting_dir}." ),
         call( "Deleting broken drives." ),
-        call( f"Treating shortcuts to drives as broken: {[]}." )
+        call( f"Ignoring broken shortcuts to these missing drives: {[]}." )
     ]
 
     # Mock os.remove to verify that search_loop calls it when run with the clean
@@ -349,39 +349,32 @@ def test_search_loop( mock_print, mock_remove, mock_time, mock_getsize, dir_of_s
         call(shortcuts["not_a_dir_url_shortcut"].FullName),
     ]
 
-    mock_print.assert_has_calls( clean_start_calls, any_order=False )
+    mock_print.assert_has_calls( delete_start_calls, any_order=False )
     mock_print.assert_has_calls( exception_calls, any_order=True )
     mock_remove.assert_has_calls( remove_calls, any_order=True )
-    mock_print.assert_any_call( f"Found shortcut to missing drive {shortcut_drive} at {shortcut_path}." )
+    mock_print.assert_any_call( f"Found broken shortcut to missing drive {shortcut_drive} at {shortcut_path}." )
     mock_print.assert_has_calls( end_calls, any_order=False )
 
-    # Verify that the shortcut that targets a different drive is treated as broken
-    # when the drive is included in clean_drives.
+    # Verify that the shortcut that targets a different drive is ignored
+    # when the drive is included in removable_drives.
     mock_print.reset_mock()
-    search_loop( starting_dir, delete=False, clean_drives=[ shortcut_drive ] )
+    search_loop( starting_dir, delete=False, removable_drives=[ shortcut_drive ] )
 
-    clean_drives_start_call = [
+    removable_drives_start_call = [
         call( f"Starting search at {starting_dir}." ),
-        call( f"Treating shortcuts to drives as broken: {[ shortcut_drive ]}." )
+        call( f"Ignoring broken shortcuts to these missing drives: {[ shortcut_drive ]}." )
     ]
 
-    clean_drives_calls = [
-        call( f"Found shortcut to missing drive {shortcut_drive} at {shortcut_path}." ),
-        call( f"Treating as broken because {shortcut_drive} is in clean drives list." ),
-    ]
-
-    clean_drives_broken_calls = broken_shortcut_calls + [ call( f"Found broken shortcut at {shortcut_path}." ) ]
-
-    clean_drives_end_call = [
+    removable_drives_end_call = [
         call( f"Took {time.time() - time.time()} seconds to run." ),
-        call( f"Found {len(clean_drives_broken_calls)} broken shortcuts using {len(clean_drives_broken_calls)} total bytes." )
+        call( f"Found {len(broken_shortcut_calls) - 1} broken shortcuts using {len(broken_shortcut_calls) - 1} total bytes." )
     ]
 
-    mock_print.assert_has_calls( clean_drives_start_call, any_order=False )
-    mock_print.assert_has_calls( clean_drives_broken_calls, any_order=True )
+    mock_print.assert_has_calls( removable_drives_start_call, any_order=False )
+    mock_print.assert_has_calls( broken_shortcut_calls, any_order=True )
+    mock_print.assert_any_call( f"Ignoring this shortcut because {shortcut_drive} is in removable drives list." )
     mock_print.assert_has_calls( exception_calls, any_order=True )
-    mock_print.assert_has_calls( clean_drives_calls, any_order=True )
-    mock_print.assert_has_calls( clean_drives_end_call, any_order=False )
+    mock_print.assert_has_calls( removable_drives_end_call, any_order=False )
 
 
 @pytest.fixture
@@ -399,31 +392,31 @@ def test_validate_add_drive( tkinter_gui ):
     assert tkinter_gui.validate_add_drive( "aa" ) == False
     assert tkinter_gui.validate_add_drive( "1" ) == False
     assert tkinter_gui.validate_add_drive( ":" ) == False
-    # A new drive isn't valid if it's already in clean_drives.
-    tkinter_gui.clean_drives.append( parse_drive_str( "A:" ) )
+    # A new drive isn't valid if it's already in removable_drives.
+    tkinter_gui.removable_drives.append( parse_drive_str( "A:" ) )
     assert tkinter_gui.validate_add_drive( "A" ) == False
 
 @patch('tkinter.ttk.Frame.bind')
-def test_add_clean_drive( mock_bind, tkinter_gui ):
+def test_add_removable_drive( mock_bind, tkinter_gui ):
     drive_letter = "A"
-    assert not tkinter_gui.clean_drive_frame.winfo_children()
+    assert not tkinter_gui.removable_drive_frame.winfo_children()
     tkinter_gui.add_drive_var.set( drive_letter )
-    tkinter_gui.add_clean_drive()
+    tkinter_gui.add_removable_drive()
     assert not tkinter_gui.add_drive_var.get()
-    assert len( tkinter_gui.clean_drive_frame.winfo_children() ) == 1
-    new_removable_drive = tkinter_gui.clean_drive_frame.winfo_children()[0]
+    assert len( tkinter_gui.removable_drive_frame.winfo_children() ) == 1
+    new_removable_drive = tkinter_gui.removable_drive_frame.winfo_children()[0]
     assert new_removable_drive.drive == parse_drive_str( drive_letter )
     # Based on this: https://stackoverflow.com/questions/138029/get-bound-event-handler-in-tkinter
     # there isn't a clean way to get the name of a function bound to a TK widget.
-    # For now, easiest to just mock bind to verify that add_clean_drive is hooking
-    # up the RemovableDrive to remove_clean_drive correctly.
-    mock_bind.assert_called_with( "<Destroy>", tkinter_gui.remove_clean_drive )
+    # For now, easiest to just mock bind to verify that add_removable_drive is hooking
+    # up the RemovableDrive to remove_removable_drive correctly.
+    mock_bind.assert_called_with( "<Destroy>", tkinter_gui.remove_removable_drive )
 
-    tkinter_gui.add_clean_drive()
+    tkinter_gui.add_removable_drive()
     assert not tkinter_gui.add_drive_var.get()
-    assert len( tkinter_gui.clean_drive_frame.winfo_children() ) == 1
+    assert len( tkinter_gui.removable_drive_frame.winfo_children() ) == 1
 
     tkinter_gui.add_drive_var.set( "A:" )
-    tkinter_gui.add_clean_drive()
+    tkinter_gui.add_removable_drive()
     assert not tkinter_gui.add_drive_var.get()
-    assert len( tkinter_gui.clean_drive_frame.winfo_children() ) == 1
+    assert len( tkinter_gui.removable_drive_frame.winfo_children() ) == 1

@@ -6,8 +6,8 @@ directory and its subdirectories for broken shortcuts. A shortcut is considered
 broken if it:
     Targets a file or directory that is not there.
     Targets an invalid URL.
-    Targets a file or directory on a detached drive specified in the --clean_drives
-    option.
+    Targets a file or directory on a detached drive not specified in the
+    --removable_drives option.
 
 By default, the script will only report broken shortcuts. Run it with the --delete
 option to delete broken shortcuts.
@@ -65,7 +65,7 @@ def parse_drive_str( drive: str ) -> str:
         return None
     return alpha_drive[0].upper() + ":"
 
-def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
+def parse_removable_drives( removable_drives: list[str] ) -> list[str]:
     """
     Given list of characters, parse them to be drive letters and return
     resulting list. Intended to parse user input and so reports cases where user
@@ -73,7 +73,7 @@ def parse_clean_drives( clean_drives: list[str] ) -> list[str]:
     """
     parsed_drives = []
 
-    for drive in clean_drives:
+    for drive in removable_drives:
         alpha_drive = list( filter( str.isalpha, drive ) )
         if alpha_drive:
             first_letter = alpha_drive.pop(0)
@@ -227,7 +227,7 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         shortcut.FullName
     )
 
-def search_loop( start_dir: str, delete: bool, clean_drives: list[str] ):
+def search_loop( start_dir: str, delete: bool, removable_drives: list[str] ):
     """
     Search for broken shortcuts in starting directory or subdirectories, and
     either report or delete them based on user input.
@@ -235,13 +235,13 @@ def search_loop( start_dir: str, delete: bool, clean_drives: list[str] ):
     Arguments:
         start_dir: The directory to start the search at.
         delete: Whether or not to delete broken shortcuts that are found.
-        clean_dirves: A list of drive letters. If shortcuts target these missing
-        drives, they will be treated as broken shortcuts.
+        removable_drives: A list of drive letters. Shortcuts will not be treated
+        as broken if they target these missing drives.
     """
     print( f"Starting search at {start_dir}." )
     if delete:
         print( "Deleting broken drives." )
-    print( f"Treating shortcuts to drives as broken: {clean_drives}." )
+    print( f"Ignoring broken shortcuts to these missing drives: {removable_drives}." )
 
     start_time = time.time()
 
@@ -258,13 +258,12 @@ def search_loop( start_dir: str, delete: bool, clean_drives: list[str] ):
                     broken = False
                     try:
                         if is_target_drive_missing( path ):
-                            # Possible the drive is just disconnected, so leave the
-                            # shortcut be.
                             shortcut = get_shortcut_object( path )
                             drive, _ = os.path.splitdrive( shortcut.TargetPath )
-                            print(f"Found shortcut to missing drive {drive} at {path}.")
-                            if drive in clean_drives:
-                                print(f"Treating as broken because {drive} is in clean drives list.")
+                            print(f"Found broken shortcut to missing drive {drive} at {path}.")
+                            if drive in removable_drives:
+                                print(f"Ignoring this shortcut because {drive} is in removable drives list.")
+                            else:
                                 broken = True
                         else:
                             broken = is_broken_shortcut( path )
@@ -329,19 +328,19 @@ class TkinterGUI(ttk.Frame):
         parent: The parent TKinter widget of this TkinterGUI.
         start_dir_var: The StringVar which holds the path to the starting directory.
         delete_var: The BooleanVar which holds whether --delete is enabled.
-        clean_drives: The list of string drive letters which holds --clean_drives.
+        removable_drives: The list of string drive letters which holds --removable_drives.
         add_drive_var: The StringVar which holds the drive letter the user has
-            entered before it is submitted to clean_drives.
+            entered before it is submitted to removable_drives.
 
     Functions:
         browse_start_dir
-        add_clean_drive
+        add_removable_drive
         validate_add_drive
-        remove_clean_drive
+        remove_removable_drive
         run_search_loop
     """
 
-    def __init__(self, parent, delete, clean_drives, **options):
+    def __init__(self, parent, delete, removable_drives, **options):
         """
         Initialize the TkinterGUI's attributes, and then initializes all the
         widgets that make up the GUI.
@@ -351,7 +350,7 @@ class TkinterGUI(ttk.Frame):
 
         self.start_dir_var = tk.StringVar( self, "" )
         self.delete_var = tk.BooleanVar( self, delete )
-        self.clean_drives = clean_drives
+        self.removable_drives = removable_drives
         self.add_drive_var = tk.StringVar( self, "" )
 
         self.grid( sticky="NESW")
@@ -372,10 +371,10 @@ class TkinterGUI(ttk.Frame):
         self.delete_check.grid( column=0, row=2 )
 
         # GUI for selecting drives to treat as broken.
-        self.clean_drives_label = ttk.Label( self.control_frame, text="Clean drives" )
-        self.clean_drives_label.grid( column=0, row=3 )
+        self.removable_drives_label = ttk.Label( self.control_frame, text="Removable drives" )
+        self.removable_drives_label.grid( column=0, row=3 )
 
-        self.add_drive_button = ttk.Button( self.control_frame, text="Add drive", command=self.add_clean_drive )
+        self.add_drive_button = ttk.Button( self.control_frame, text="Add drive", command=self.add_removable_drive )
         self.add_drive_button.grid( column=0, row=4 )
 
         validate_add_drive_wrapper = (parent.register(self.validate_add_drive), '%P')
@@ -387,12 +386,12 @@ class TkinterGUI(ttk.Frame):
         )
         self.add_drive_entry.grid( column=1, row=4 )
 
-        self.clean_drive_frame = ttk.Frame( self.control_frame, padding=10 )
-        self.clean_drive_frame.grid( column=2, row=3, rowspan=4 )
+        self.removable_drive_frame = ttk.Frame( self.control_frame, padding=10 )
+        self.removable_drive_frame.grid( column=2, row=3, rowspan=4 )
 
-        for drive in clean_drives:
-            drive_frame = RemovableDrive( self.clean_drive_frame, drive )
-            drive_frame.bind( "<Destroy>", self.remove_clean_drive )
+        for drive in removable_drives:
+            drive_frame = RemovableDrive( self.removable_drive_frame, drive )
+            drive_frame.bind( "<Destroy>", self.remove_removable_drive )
             drive_frame.pack()
 
         # Button for starting search loop.
@@ -425,7 +424,7 @@ class TkinterGUI(ttk.Frame):
         # Let the starting dir entry expand horizontally.
         self.control_frame.columnconfigure(2, weight=1)
         # Let the 6th row of the control frame, which only contains the
-        # clean_drive_frame, expand vertically.
+        # removable_drive_frame, expand vertically.
         self.control_frame.rowconfigure(6, weight=1)
 
     def destroy(self):
@@ -449,40 +448,40 @@ class TkinterGUI(ttk.Frame):
         Given an input, returns whether input is a valid drive letter to add.
         Returns true if input is empty, or a single alphabetic character. Returns
         false if input is more than one character, non-alphabetic, or corresponds
-        to a drive letter already in clean_drives.
+        to a drive letter already in removable_drives.
         Intended to be used as the validatecommand of a TKinter Entry widget.
         """
         if not entry_input:
             return True
         if len(entry_input) > 1 or not entry_input.isalpha():
             return False
-        if parse_drive_str( entry_input ) in self.clean_drives:
+        if parse_drive_str( entry_input ) in self.removable_drives:
             return False
         return True
 
-    def add_clean_drive(self):
+    def add_removable_drive(self):
         """
         Gets the value from the add_drive_var. If it is valid and isn't empty,
-        parses the entry, adds it to clean_drives, and creates a RemovableDrive
+        parses the entry, adds it to removable_drives, and creates a RemovableDrive
         frame for the new drive. Always empties add_drive_var.
         """
         drive_to_add = self.add_drive_var.get()
         if drive_to_add and self.validate_add_drive( drive_to_add ):
             parsed_drive = parse_drive_str( drive_to_add )
-            self.clean_drives.append( parsed_drive )
-            drive_frame = RemovableDrive( self.clean_drive_frame, parsed_drive )
-            drive_frame.bind( "<Destroy>", self.remove_clean_drive )
+            self.removable_drives.append( parsed_drive )
+            drive_frame = RemovableDrive( self.removable_drive_frame, parsed_drive )
+            drive_frame.bind( "<Destroy>", self.remove_removable_drive )
             drive_frame.pack()
         self.add_drive_var.set("")
 
-    def remove_clean_drive( self, event ):
+    def remove_removable_drive( self, event ):
         """
-        Given a Destroy event, remove from clean_drives the drive of the destroyed
+        Given a Destroy event, remove from removable_drives the drive of the destroyed
         widget.
         Intended to be used as a callback function for when a RemovableDrive frame
         is destroyed.
         """
-        self.clean_drives.remove( event.widget.drive )
+        self.removable_drives.remove( event.widget.drive )
 
     def run_search_loop(self):
         """
@@ -490,12 +489,12 @@ class TkinterGUI(ttk.Frame):
         and disable the run_button while the loop runs.
         """
         self.run_button.config( state=tk.DISABLED )
-        search_loop( self.start_dir_var.get(), self.delete_var.get(), self.clean_drives )
+        search_loop( self.start_dir_var.get(), self.delete_var.get(), self.removable_drives )
         self.run_button.config( state=tk.NORMAL )
 
 class RemovableDrive(ttk.Frame):
     """
-    Frame which represents a drive letter that was added to clean_drives. Includes
+    Frame which represents a drive letter that was added to removable_drives. Includes
     a button to destroy the frame.
 
     Attributes:
@@ -528,10 +527,11 @@ def main():
         action='store_true',
     )
     parser.add_argument(
-        '--clean_drives',
+        '--removable_drives',
         help='''A list of drive letters. If shortcuts target these missing drives,
-        they will be treated as broken shortcuts. Strings with multiple letters
-        will be ignored.''',
+        and thus are broken, they will be ignored. Strings with multiple letters
+        will be ignored. Intended for shortcuts to drives which are not always
+        connected.''',
         action='store',
         nargs='+',
         default=[]
@@ -543,7 +543,7 @@ def main():
     )
     args = parser.parse_args()
 
-    args.clean_drives = parse_clean_drives( args.clean_drives )
+    args.removable_drives = parse_removable_drives( args.removable_drives )
 
     # Start building Tkinter window
     root = tk.Tk()
@@ -552,10 +552,10 @@ def main():
         # Hide the Tkinter root so we only get the file dialog.
         root.withdraw()
         start_dir = filedialog.askdirectory()
-        search_loop( start_dir, args.delete, args.clean_drives )
+        search_loop( start_dir, args.delete, args.removable_drives )
         return
 
-    gui = TkinterGUI( root, args.delete, args.clean_drives, padding=10 )
+    gui = TkinterGUI( root, args.delete, args.removable_drives, padding=10 )
     gui.parent.mainloop()
 
 if __name__=="__main__":
