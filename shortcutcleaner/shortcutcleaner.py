@@ -16,7 +16,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
-from threading import Thread
+from threading import Event, Thread
 import time
 import tkinter as tk
 from tkinter import filedialog
@@ -227,7 +227,7 @@ def is_target_drive_missing( shortcut: Shortcut ) -> bool:
         shortcut.FullName
     )
 
-def search_loop( start_dir: str, delete: bool, removable_drives: list[str] ):
+def search_loop( start_dir: str, delete: bool, removable_drives: list[str], stop_event: Event=None ):
     """
     Search for broken shortcuts in starting directory or subdirectories, and
     either report or delete them based on user input.
@@ -237,6 +237,9 @@ def search_loop( start_dir: str, delete: bool, removable_drives: list[str] ):
         delete: Whether or not to delete broken shortcuts that are found.
         removable_drives: A list of drive letters. Shortcuts will not be treated
         as broken if they target these missing drives.
+        stop_event: Optionally, a threading.Event object which, if set, will cause
+        the loop to exit early. Intended for use when running search_loop in a
+        thread.
     """
     print( f"Starting search at {start_dir}." )
     if delete:
@@ -290,8 +293,15 @@ def search_loop( start_dir: str, delete: bool, removable_drives: list[str] ):
                             print(f"Found broken shortcut at {path}.")
                 elif os.path.isdir( path ):
                     dirs_to_search.append( path )
+
+                if stop_event and stop_event.is_set():
+                    break
+
         except PermissionError as e:
             print(e)
+
+        if stop_event and stop_event.is_set():
+            break
 
     print(f"Took {(time.time() - start_time)} seconds to run.")
     print(f"Found {total_count} broken shortcuts using {total_size} total bytes.")
@@ -353,6 +363,8 @@ class TkinterGUI(ttk.Frame):
         self.delete_var = tk.BooleanVar( self, delete )
         self.removable_drives = removable_drives
         self.add_drive_var = tk.StringVar( self, "" )
+
+        self.stop_event = Event()
 
         self.grid( sticky="NESW")
 
@@ -430,10 +442,11 @@ class TkinterGUI(ttk.Frame):
 
     def destroy(self):
         """
-        Restores the original stdout object before destroying the TkinterGUI.
+        Restores the original stdout object and sets an event signalling the
+        potential search_loop_thread to stop before destroying the TkinterGUI.
         """
         sys.stdout = self.old_stdout
-
+        self.stop_event.set()
         super().destroy()
 
     def browse_start_dir(self):
@@ -499,8 +512,11 @@ class TkinterGUI(ttk.Frame):
         A wrapper function to run the search_loop and then reactivate the run_button.
         Intended to be ran in a seperate thread.
         """
-        search_loop( self.start_dir_var.get(), self.delete_var.get(), self.removable_drives )
-        self.run_button.config( state=tk.NORMAL )
+        search_loop( self.start_dir_var.get(), self.delete_var.get(), self.removable_drives, stop_event=self.stop_event )
+        # Don't need to reactivate the run_button if the TKinterGUI has been closed
+        # stop_event is set.
+        if not self.stop_event.is_set():
+            self.run_button.config( state=tk.NORMAL )
 
 class RemovableDrive(ttk.Frame):
     """
