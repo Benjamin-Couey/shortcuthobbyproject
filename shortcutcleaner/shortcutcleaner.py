@@ -16,6 +16,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
+from threading import Thread
 import time
 import tkinter as tk
 from tkinter import filedialog
@@ -336,6 +337,7 @@ class TkinterGUI(ttk.Frame):
         add_removable_drive
         validate_add_drive
         remove_removable_drive
+        start_search_thread
         run_search_loop
     """
 
@@ -394,7 +396,7 @@ class TkinterGUI(ttk.Frame):
             drive_frame.pack()
 
         # Button for starting search loop.
-        self.run_button = ttk.Button( self.control_frame, text="Run", command=self.run_search_loop )
+        self.run_button = ttk.Button( self.control_frame, text="Run", command=self.start_search_thread )
         self.run_button.grid( column=0, row=5 )
 
         # Text box to display result of search loop.
@@ -431,6 +433,7 @@ class TkinterGUI(ttk.Frame):
         Restores the original stdout object before destroying the TkinterGUI.
         """
         sys.stdout = self.old_stdout
+
         super().destroy()
 
     def browse_start_dir(self):
@@ -482,12 +485,20 @@ class TkinterGUI(ttk.Frame):
         """
         self.removable_drives.remove( event.widget.drive )
 
-    def run_search_loop(self):
+    def start_search_thread(self):
         """
-        A wrapper function to run search_loop with values of TkinterGUI's attributes
-        and disable the run_button while the loop runs.
+        A wrapper function to disable the run_button and start the thread which
+        will run the search loop.
         """
         self.run_button.config( state=tk.DISABLED )
+        search_loop_thread = Thread(target=self.run_search_loop)
+        search_loop_thread.start()
+
+    def run_search_loop(self):
+        """
+        A wrapper function to run the search_loop and then reactivate the run_button.
+        Intended to be ran in a seperate thread.
+        """
         search_loop( self.start_dir_var.get(), self.delete_var.get(), self.removable_drives )
         self.run_button.config( state=tk.NORMAL )
 
