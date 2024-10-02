@@ -1,2 +1,3 @@
 # shortcutcleaner
-A hobby project intended to clean up broken shortcuts on a Windows system.
+A script to search for and optionally delete broken Windows shortcut files, made as
+a simple hobby project.
